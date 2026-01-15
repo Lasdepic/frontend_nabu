@@ -40,12 +40,21 @@ export async function logout() {
 
 // Register
 export async function register(userData) {
-	const res = await fetch('http://localhost/stage/backend_nabu/index.php?action=logout', {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		credentials: "include",
-		body: JSON.stringify(userData),
-	});
+	try {
+		const res = await fetch('http://localhost/stage/backend_nabu/index.php?action=register', {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify(userData),
+		});
 
-	return await jsonDecode(res);
+		if (!res.ok) {
+			throw new Error(`Echec de l'inscription, statut ${res.status}`);
+		}
+
+		return await res.json();
+	} catch (error) {
+		console.error("Erreur lors de la requête d'inscription:", error);
+		throw error;
+	}
 }
