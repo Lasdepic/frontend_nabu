@@ -26,11 +26,9 @@ export async function logout() {
 			method: "GET",
 			credentials: "include",
 		});
-
 		if (!res.ok) {
 			console.error("Erreur lors de la déconnexion");
 		}
-
 		return true;
 	} catch (error) {
 		console.error("Erreur lors de la déconnexion:", error);

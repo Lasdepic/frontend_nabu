@@ -1,6 +1,6 @@
 export function createNavbar() {
     return `
-        <nav class="navbar navbar-expand-lg" style="background-color: #4a5568; padding: 1.5rem 2rem;">
+        <nav class="navbar navbar-expand-lg" style="background-color: #343A40; padding: 1.5rem 2rem;">
             <div class="container-fluid">
                 <a class="navbar-brand text-white fw-bold fs-4" href="index.html">NABU</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
