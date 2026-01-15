@@ -1,0 +1,39 @@
+export function createNavbar() {
+    return `
+        <nav class="navbar navbar-expand-lg" style="background-color: #4a5568; padding: 1.5rem 2rem;">
+            <div class="container-fluid">
+                <a class="navbar-brand text-white fw-bold fs-4" href="index.html">NABU</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="index.html">Accueil</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="#" id="logoutBtn">Déconnexion</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    `;
+}
+
+export function initNavbar(selector = 'header') {
+    const headerElement = document.querySelector(selector);
+    if (headerElement) {
+        headerElement.innerHTML = createNavbar();
+        
+        // Gérer la déconnexion
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                window.location.href = 'index.html';
+            });
+        }
+    }
+}
