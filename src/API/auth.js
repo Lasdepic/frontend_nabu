@@ -47,11 +47,9 @@ export async function register(userData) {
 			credentials: "include",
 			body: JSON.stringify(userData),
 		});
-
 		if (!res.ok) {
 			throw new Error(`Echec de l'inscription, statut ${res.status}`);
 		}
-
 		return await res.json();
 	} catch (error) {
 		console.error("Erreur lors de la requête d'inscription:", error);

@@ -9,8 +9,6 @@ export async function fetchAllCorpus() {
 	}
 }
 
-const corpus = await fetchAllCorpus();
-console.log(corpus);
 
 // API pour récupéré un Corpus
 export async function fetchOneCorpus() {
