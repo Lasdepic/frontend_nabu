@@ -10,7 +10,7 @@ export function selectCorpus(onSelect) {
 
 	// Crée le select natif
 	const select = document.createElement('select');
-	select.className = 'form-select select-small';
+	select.className = 'form-select select-small custom-select-corpus';
 	select.id = 'corpus-select';
 
 	// Ajoute un placeholder
@@ -31,7 +31,7 @@ export function selectCorpus(onSelect) {
 				option.innerHTML = corpus.desciption_corpus
 				  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
 				  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
-				option.textContent = corpus.name_corpus; // fallback pour accessibilité
+				option.textContent = corpus.name_corpus; 
 				option.dataset.corpus = JSON.stringify({
 					id: corpus.idcorpus,
 					nom: corpus.name_corpus,
@@ -43,7 +43,7 @@ export function selectCorpus(onSelect) {
 			setTimeout(() => {
 				if (window.$ && window.$.fn && window.$.fn.select2) {
 					window.$(select).select2({
-						width: 'resolve',
+						width: 'style', 
 						templateResult: formatCorpusOption,
 						templateSelection: formatCorpusSelection,
 						dropdownParent: window.$(container)

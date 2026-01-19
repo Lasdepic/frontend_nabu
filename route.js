@@ -1,4 +1,5 @@
-// Système de routage simple pour charger dynamiquement les pages
+import { isAuthenticated } from './src/API/auth.js';
+
 const routes = {
 	'/': {
 		template: () => import('./src/pages/home/accueil.js'),
@@ -16,18 +17,6 @@ const routes = {
 		title: 'Admin'
 	}
 };
-
-// Vérifie l'authentification via une requête à l'API
-async function isAuthenticated() {
-	try {
-		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' });
-		if (!response.ok) return false;
-		const data = await response.json();
-		return data && data.authenticated === true;
-	} catch {
-		return false;
-	}
-}
 
 async function navigate(path) {
 	// Vérifie l'authentification
