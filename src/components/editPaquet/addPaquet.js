@@ -1,6 +1,7 @@
 
 import { selectCorpus } from '../selectCorpus.js';
 import { createPaquet } from '../../API/paquet.js';
+import { createTypeDocumentSelector } from '../selectTypeDocument.js';
 
 // Affiche une modale avec un formulaire pour créer un paquet
 export function afficherCardPaquetAddModal() {
@@ -93,6 +94,10 @@ export function afficherCardPaquetAddModal() {
 					<div id="corpus-select-container"></div>
 				</div>
 				<div class="col-md-6">
+					<label class="form-label">Type de document :</label>
+					<div id="type-document-select-container"></div>
+				</div>
+				<div class="col-md-6">
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving">
 				</div>
@@ -123,14 +128,20 @@ export function afficherCardPaquetAddModal() {
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
 
-	// Ajout du sélecteur de corpus à la place de l'input Corpus ID
-	setTimeout(() => {
+	// Ajout du sélecteur de corpus et du sélecteur de type de document
+	(async () => {
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
 			const corpusSelector = selectCorpus();
 			corpusContainer.appendChild(corpusSelector);
 		}
-	}, 0);
+
+		const typeDocContainer = form.querySelector('#type-document-select-container');
+		if (typeDocContainer) {
+			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId' });
+			typeDocContainer.appendChild(typeDocSelectorWrapper);
+		}
+	})();
 
 	// Ajout du submit (appel API création)
 	form.addEventListener('submit', async function(e) {
@@ -141,12 +152,15 @@ export function afficherCardPaquetAddModal() {
 		data.toDo = !!form.querySelector('[name="toDo"]').checked;
 		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
-		// CorpusId
-		const select = form.querySelector('#corpus-select-container select');
-		if (select) data.corpusId = select.value;
-		// Commentaire
-		data.commentaire = data.comment;
-		delete data.comment;
+	// CorpusId
+	const selectCorpusEl = form.querySelector('#corpus-select-container select');
+	if (selectCorpusEl) data.corpusId = selectCorpusEl.value;
+	// TypeDocumentId
+	const selectTypeDocEl = form.querySelector('#type-document-select-container select');
+	if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
+	// Commentaire
+	data.commentaire = data.comment;
+	delete data.comment;
 		// Vérification des champs obligatoires
 		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
 			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
