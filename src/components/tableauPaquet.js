@@ -1,4 +1,7 @@
+
 import { fetchAllPaquets } from '../API/paquet.js';
+import { afficherCardPaquetModal } from './cardPaquet.js';
+import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
 
 export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur') {
     let conteneur = document.getElementById(conteneurId);
@@ -58,8 +61,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         return;
     }
     const tbody = conteneur.querySelector('tbody');
-    tbody.innerHTML = paquets.map(p => `
-        <tr>
+    tbody.innerHTML = paquets.map((p, idx) => `
+        <tr data-paquet-idx="${idx}" style="cursor:pointer;">
             <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
             <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
             <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.corpus || ''}</td>
@@ -73,6 +76,15 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             </td>
         </tr>
     `).join('');
+
+    // Ajoute un event listener sur chaque ligne pour afficher la card du paquet dans une modale centrée
+    Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
+        tr.addEventListener('click', function() {
+            const idx = this.getAttribute('data-paquet-idx');
+            const paquet = paquets[idx];
+            afficherCardPaquetModal(paquet);
+        });
+    });
 
     function addPaquet() {
         const lengthCol = document.getElementById('tableau-paquet-length-col');
@@ -100,6 +112,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 btn.id = 'btn-ajouter-paquet';
                 btn.className = 'btn btn-primary ms-2';
                 btn.innerHTML = '<i class="bi bi-plus"></i> Ajouter';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    afficherCardPaquetAddModal();
+                });
                 filterCol.appendChild(btn);
             }
         }

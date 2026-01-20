@@ -1,0 +1,201 @@
+
+import { selectCorpus } from '../selectCorpus.js';
+import { createPaquet } from '../../API/paquet.js';
+
+// Affiche une modale avec un formulaire pour créer un paquet
+export function afficherCardPaquetAddModal() {
+	// Supprime toute modale existante
+	const oldModal = document.getElementById('paquet-modal-overlay');
+	if (oldModal) oldModal.remove();
+
+	// Overlay
+	const overlay = document.createElement('div');
+	overlay.id = 'paquet-modal-overlay';
+	overlay.style.position = 'fixed';
+	overlay.style.top = 0;
+	overlay.style.left = 0;
+	overlay.style.width = '100vw';
+	overlay.style.height = '100vh';
+	overlay.style.background = 'rgba(0,0,0,0.5)';
+	overlay.style.display = 'flex';
+	overlay.style.alignItems = 'center';
+	overlay.style.justifyContent = 'center';
+	overlay.style.zIndex = 2000;
+
+	// Modale
+	const modal = document.createElement('div');
+	modal.style.position = 'relative';
+	modal.style.background = '#fff';
+	modal.style.borderRadius = '10px';
+	modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.25)';
+	modal.style.padding = '24px 16px 16px 16px';
+	modal.style.maxWidth = '650px';
+	modal.style.width = '100%';
+	modal.style.maxHeight = '90vh';
+	modal.style.overflowY = 'auto';
+
+	// Bouton de fermeture
+	const closeBtn = document.createElement('button');
+	closeBtn.innerHTML = 'X';
+	closeBtn.setAttribute('aria-label', 'Fermer');
+	closeBtn.style.position = 'absolute';
+	closeBtn.style.top = '8px';
+	closeBtn.style.right = '16px';
+	closeBtn.style.left = 'auto';
+	closeBtn.style.transform = 'none';
+	closeBtn.style.width = '44px';
+	closeBtn.style.height = '44px';
+	closeBtn.style.display = 'flex';
+	closeBtn.style.alignItems = 'center';
+	closeBtn.style.justifyContent = 'center';
+	closeBtn.style.fontSize = '1.5rem';
+	closeBtn.style.background = '#dc3545';
+	closeBtn.style.border = 'none';
+	closeBtn.style.borderRadius = '50%';
+	closeBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+	closeBtn.style.cursor = 'pointer';
+	closeBtn.style.color = '#fff';
+	closeBtn.style.zIndex = 10;
+	closeBtn.style.transition = 'background 0.2s, color 0.2s';
+	closeBtn.addEventListener('mouseenter', () => {
+		closeBtn.style.background = '#bb2d3b';
+	});
+	closeBtn.addEventListener('mouseleave', () => {
+		closeBtn.style.background = '#dc3545';
+	});
+	closeBtn.addEventListener('click', () => overlay.remove());
+
+	// Formulaire de création
+	const form = document.createElement('form');
+	const connectedUserId = localStorage.getItem('userId') || '';
+	form.innerHTML = `
+		<div class="fw-bold fs-3 text-center mb-4">Création d’un paquet</div>
+		<div class="container-fluid">
+			<div class="row g-3">
+				<div class="col-md-6">
+					<label class="form-label">Nom dossier <span style="color:red">*</span> :</label>
+					<input type="text" class="form-control" name="folderName" required>
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Répertoire des images autre :</label>
+					<input type="text" class="form-control" name="microFilmImage">
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Cote <span style="color:red">*</span> :</label>
+					<input type="text" class="form-control" name="cote" required>
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Répertoire des images couleurs :</label>
+					<input type="text" class="form-control" name="imageColor">
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Corpus :</label>
+					<div id="corpus-select-container"></div>
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Recherche Archivage :</label>
+					<input type="text" class="form-control" name="searchArchiving">
+				</div>
+				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center">
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" name="toDo" id="addToDo">
+						<label class="form-check-label" for="addToDo">A faire :</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" name="facileTest" id="addFacileTest">
+						<label class="form-check-label" for="addFacileTest">Multi volume :</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="checkbox" name="filedSip" id="addFiledSip">
+						<label class="form-check-label" for="addFiledSip">Déposé dans SIP en prod num :</label>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<label class="form-label">Commentaire :</label>
+					<textarea class="form-control" name="comment" rows="4"></textarea>
+				</div>
+			</div>
+			<div class="d-flex justify-content-center mt-4">
+				<button type="submit" class="btn btn-success px-5">Créer</button>
+			</div>
+		</div>
+		<input type="hidden" name="usersId" value="${connectedUserId}">
+		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
+	`;
+
+	// Ajout du sélecteur de corpus à la place de l'input Corpus ID
+	setTimeout(() => {
+		const corpusContainer = form.querySelector('#corpus-select-container');
+		if (corpusContainer) {
+			const corpusSelector = selectCorpus();
+			corpusContainer.appendChild(corpusSelector);
+		}
+	}, 0);
+
+	// Ajout du submit (appel API création)
+	form.addEventListener('submit', async function(e) {
+		e.preventDefault();
+		const formData = new FormData(form);
+		const data = Object.fromEntries(formData.entries());
+		// Gestion des booléens
+		data.toDo = !!form.querySelector('[name="toDo"]').checked;
+		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
+		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
+		// CorpusId
+		const select = form.querySelector('#corpus-select-container select');
+		if (select) data.corpusId = select.value;
+		// Commentaire
+		data.commentaire = data.comment;
+		delete data.comment;
+		// Vérification des champs obligatoires
+		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
+			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
+			return;
+		}
+		// Appel API
+		const res = await createPaquet(data);
+		// Fermer la modale
+		overlay.remove();
+		// Afficher une popup de succès ou d'erreur
+		if (res && (res.success || res.status === 'success')) {
+			showPopup('Le paquet a bien été enregistré.', true);
+		} else if (res && res.fields) {
+			showPopup('Champs manquants : ' + res.fields.join(', '), false);
+		} else if (res && res.message) {
+			showPopup(res.message, false);
+		} else {
+			showPopup("Erreur lors de l'enregistrement du paquet.", false);
+		}
+	});
+
+	// Fonction utilitaire pour afficher une popup
+	function showPopup(message, success = true) {
+		const popup = document.createElement('div');
+		popup.textContent = message;
+		popup.style.position = 'fixed';
+		popup.style.top = '30px';
+		popup.style.left = '50%';
+		popup.style.transform = 'translateX(-50%)';
+		popup.style.background = success ? '#28a745' : '#dc3545';
+		popup.style.color = '#fff';
+		popup.style.padding = '16px 32px';
+		popup.style.borderRadius = '8px';
+		popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+		popup.style.zIndex = 3000;
+		popup.style.fontSize = '1.1rem';
+		document.body.appendChild(popup);
+		setTimeout(() => {
+			popup.remove();
+		}, 2500);
+	}
+
+	modal.appendChild(closeBtn);
+	modal.appendChild(form);
+	overlay.appendChild(modal);
+
+	overlay.addEventListener('click', e => {
+		if (e.target === overlay) overlay.remove();
+	});
+
+	document.body.appendChild(overlay);
+}

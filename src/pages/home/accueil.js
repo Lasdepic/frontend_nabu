@@ -1,9 +1,21 @@
+
 import { createNavbar } from '../../components/navbar.js';
 import { selectCorpus, getSelectedCorpus } from '../../components/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
+import { isAuthenticated } from '../../API/auth.js';
 
 
 export default function accueilPage() {
+		// Récupère l'id utilisateur connecté et le stocke dans le localStorage
+		fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' })
+			.then(r => r.json())
+			.then(data => {
+				if (data && data.authenticated && data.user && data.user.id) {
+					localStorage.setItem('userId', data.user.id);
+				} else {
+					localStorage.removeItem('userId');
+				}
+			});
 	let main = document.querySelector('main');
 	if (!main) {
 		main = document.createElement('main');
