@@ -1,3 +1,17 @@
+// Récupère l'id utilisateur connecté et le stocke dans le localStorage
+export async function storeConnectedUserId() {
+	try {
+		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' });
+		const data = await response.json();
+		if (data && data.authenticated && data.user && data.user.id) {
+			localStorage.setItem('userId', data.user.id);
+		} else {
+			localStorage.removeItem('userId');
+		}
+	} catch {
+		localStorage.removeItem('userId');
+	}
+}
 // Vérifie l'authentification via une requête à l'API
 export async function isAuthenticated() {
 	try {
