@@ -3,6 +3,7 @@
 import { selectCorpus } from '../../components/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
 import { afficherTableauToDoPaquet } from '../../components/toDo.js';
+import { afficherSendErrorPaquet } from '../../components/sendError.js';
 
 
 export default function accueilPage() {
@@ -44,29 +45,52 @@ export default function accueilPage() {
        tableauDiv.id = 'tableau-paquet-conteneur';
        rowDiv.appendChild(tableauDiv);
 
-       // Tableau responsive
+
+       // Colonne droite pour ToDo et SendError
+       const rightColDiv = document.createElement('div');
+       rightColDiv.className = 'col-12 col-lg-4 mt-4 d-flex flex-column align-items-end';
+       rightColDiv.style.maxWidth = '340px';
+       rightColDiv.style.marginLeft = 'auto';
+       rightColDiv.style.marginRight = '80px';
+       rightColDiv.style.padding = '0';
+       rightColDiv.style.background = 'none';
+       rightColDiv.style.border = 'none';
+
+       // ToDo conteneur
        const toDoDiv = document.createElement('div');
-       toDoDiv.className = 'col-12 col-lg-4 mt-4';
-       toDoDiv.style.maxWidth = '340px';
-       toDoDiv.style.marginLeft = 'auto';
-       toDoDiv.style.marginRight = '80px';
        toDoDiv.id = 'to-do-paquet-conteneur';
        toDoDiv.style.background = '#f8f9fa';
        toDoDiv.style.borderRadius = '10px';
        toDoDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
        toDoDiv.style.padding = '18px 10px 10px 10px';
+       toDoDiv.style.width = '100%';
+       toDoDiv.style.marginBottom = '18px';
        toDoDiv.style.height = 'fit-content';
-       rowDiv.appendChild(toDoDiv);
+       rightColDiv.appendChild(toDoDiv);
 
+       // SendError conteneur
+       const sendErrorDiv = document.createElement('div');
+       sendErrorDiv.id = 'send-error-paquet-conteneur';
+       sendErrorDiv.style.background = '#f8f9fa';
+       sendErrorDiv.style.borderRadius = '10px';
+       sendErrorDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
+       sendErrorDiv.style.padding = '18px 10px 10px 10px';
+       sendErrorDiv.style.width = '100%';
+       sendErrorDiv.style.height = 'fit-content';
+       rightColDiv.appendChild(sendErrorDiv);
+
+       rowDiv.appendChild(rightColDiv);
        main.appendChild(rowDiv);
 
        afficherTableauPaquet('tableau-paquet-conteneur');
        afficherTableauToDoPaquet('to-do-paquet-conteneur');
+       afficherSendErrorPaquet('send-error-paquet-conteneur');
 
        // Selecteur pour filtrer
        function onCorpusSelect(selectedCorpus) {
               afficherTableauPaquet('tableau-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
               afficherTableauToDoPaquet('to-do-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
+              afficherSendErrorPaquet('send-error-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
        }
 
 }
