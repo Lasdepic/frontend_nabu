@@ -193,7 +193,7 @@ export function afficherCardPaquetAddModal() {
 		}
 	});
 
-	// Fonction utilitaire pour afficher une popup
+	// Fonction pour afficher une popup
 	function showPopup(message, success = true) {
 		const popup = document.createElement('div');
 		popup.textContent = message;

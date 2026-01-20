@@ -1,10 +1,23 @@
+/* Supprime la marge du body et du main pour éviter toute bande blanche */
+body, main {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  background-color: #EEEEEE;
+}
+
+/* S'assure que le header n'a pas de marge ou padding parasite */
+header {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+}
+
 .select-small {
 	width: 340px;
 	min-width: 180px;
 	max-width: 100%;
 }
-
-
 
 .select2-container--default .select2-selection--single {
 	font-size: 1.05rem;

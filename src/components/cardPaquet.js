@@ -130,10 +130,8 @@ export function createCardPaquet(paquet) {
 	if (deleteBtn) {
 		deleteBtn.addEventListener('click', () => {
 			if (confirm('Voulez-vous vraiment supprimer ce paquet ?')) {
-				// TODO: Ajouter la logique de suppression ici (API, etc.)
 				const overlay = document.getElementById('paquet-modal-overlay');
 				if (overlay) overlay.remove();
-				// Afficher un message ou rafraîchir la liste, etc.
 			}
 		});
 	}

@@ -1,21 +1,17 @@
 import { fetchAllCorpus } from '../API/corpus.js';
 
-// Permet de stocker le dernier corpus sélectionné
 let selectedCorpus = null;
 
 export function selectCorpus(onSelect) {
-	// Crée un conteneur principal
+
 	const container = document.createElement('div');
 
-	// Crée le select natif
 	const select = document.createElement('select');
 	select.className = 'select-small';
 	select.id = 'corpus-select';
 
-		// Remplit le select avec les corpus depuis l'API
 		fetchAllCorpus().then(corpusList => {
 			if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
-				// Ajoute l'option TOUS et la sélectionne par défaut
 				const allOption = document.createElement('option');
 				allOption.value = 'ALL';
 				allOption.textContent = 'TOUS';
@@ -26,11 +22,10 @@ export function selectCorpus(onSelect) {
 				corpusList.data.forEach(corpus => {
 					const option = document.createElement('option');
 					option.value = corpus.idcorpus;
-					// Utilise data-html pour Select2
 					option.innerHTML = corpus.desciption_corpus
 					  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
 					  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
-					option.textContent = corpus.name_corpus; // fallback pour accessibilité
+					option.textContent = corpus.name_corpus; 
 					option.dataset.corpus = JSON.stringify({
 						id: corpus.idcorpus,
 						nom: corpus.name_corpus,
@@ -38,7 +33,6 @@ export function selectCorpus(onSelect) {
 					});
 					select.appendChild(option);
 				});
-				// Initialise Select2 après le remplissage
 				setTimeout(() => {
 					if (window.$ && window.$.fn && window.$.fn.select2) {
 						window.$(select).select2({
@@ -52,7 +46,6 @@ export function selectCorpus(onSelect) {
 			}
 		});
 
-		       // Sélection native
 	select.addEventListener('change', (e) => {
 		const selectedOption = select.options[select.selectedIndex];
 		if (selectedOption && selectedOption.value === 'ALL') {
@@ -73,7 +66,6 @@ export function selectCorpus(onSelect) {
 		}
 	});
 
-		       // Sélection via Select2 (jQuery)
 	setTimeout(() => {
 		if (window.$ && window.$.fn && window.$.fn.select2) {
 			window.$(select).on('change', function (e) {

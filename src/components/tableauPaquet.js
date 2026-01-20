@@ -41,26 +41,41 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.head.appendChild(style);
     }
     conteneur.innerHTML = `
-    <div style="max-width:1200px; margin-left:10px;">
+    <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
         <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2">
             <div class="col-auto" id="tableau-paquet-length-col"></div>
             <div class="col d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
         </div>
-        <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%;">
-            <thead>
-                <tr>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Nom de dossier</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">Cote</th>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Corpus</th>
-                    <th class="text-center" scope="col" style="max-width:200px; width:200px;">Commentaire</th>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Déposé en SIP</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">Envoyé</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">À faire</th>
-                </tr>
-            </thead>
+        <div id="tableau-paquet-scroll" style="overflow-x:auto;">
+            <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
+                <thead>
+                    <tr>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Nom de dossier</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">Cote</th>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Corpus</th>
+                        <th class="text-center" scope="col" style="max-width:200px; width:200px;">Commentaire</th>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Déposé en SIP</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">Envoyé</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">À faire</th>
+                    </tr>
+                </thead>
             <tbody></tbody>
-        </table>
+            </table>
+        </div>
     </div>`;
+
+    // Responsive : scroll horizontal sur petit écran uniquement
+    const scrollDiv = conteneur.querySelector('#tableau-paquet-scroll');
+    function setTableScroll(e) {
+        if (e.matches) {
+            scrollDiv.style.overflowX = 'auto';
+        } else {
+            scrollDiv.style.overflowX = 'unset';
+        }
+    }
+    const mq = window.matchMedia('(max-width: 991.98px)');
+    setTableScroll(mq);
+    mq.addEventListener('change', setTableScroll);
 
     // Charge les corpus et les paquets
     const [corpusResult, paquetsResult] = await Promise.all([
