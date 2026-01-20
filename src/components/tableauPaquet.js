@@ -1,14 +1,23 @@
 
 import { fetchAllPaquets } from '../API/paquet.js';
+import { fetchAllCorpus } from '../API/corpus.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
 
-export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur') {
+export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
     let conteneur = document.getElementById(conteneurId);
     if (!conteneur) {
         conteneur = document.createElement('div');
         conteneur.id = conteneurId;
         document.body.appendChild(conteneur);
+    }
+
+    // Détruit l'instance DataTable précédente si elle existe
+    if (window.$ && window.$.fn && window.$.fn.DataTable) {
+        const oldTable = window.$('#tableau-paquet');
+        if (oldTable.length && oldTable.hasClass('dataTable')) {
+            oldTable.DataTable().destroy();
+        }
     }
 
 
@@ -53,19 +62,32 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         </table>
     </div>`;
 
-    // Charge les paquets
-    const result = await fetchAllPaquets();
-    const paquets = result && result.data ? result.data : result;
-    if (!paquets || !Array.isArray(paquets)) {
-        conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets.</div>';
+    // Charge les corpus et les paquets
+    const [corpusResult, paquetsResult] = await Promise.all([
+        fetchAllCorpus(),
+        fetchAllPaquets()
+    ]);
+    let corpusList = corpusResult && corpusResult.data ? corpusResult.data : corpusResult;
+    let paquets = paquetsResult && paquetsResult.data ? paquetsResult.data : paquetsResult;
+    if (!paquets || !Array.isArray(paquets) || !corpusList || !Array.isArray(corpusList)) {
+        conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets ou des corpus.</div>';
         return;
+    }
+    // Dictionnaire idcorpus -> name_corpus
+    const corpusDict = {};
+    corpusList.forEach(c => {
+        corpusDict[c.idcorpus || c.idCorpus] = c.name_corpus || c.nameCorpus;
+    });
+    // Filtre par corpus si demandé
+    if (filterCorpusId) {
+        paquets = paquets.filter(p => String(p.corpusId) === String(filterCorpusId));
     }
     const tbody = conteneur.querySelector('tbody');
     tbody.innerHTML = paquets.map((p, idx) => `
         <tr data-paquet-idx="${idx}" style="cursor:pointer;">
             <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
             <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
-            <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.corpus || ''}</td>
+            <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
             <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
             <td class="text-center" style="max-width:150px; width:150px;">${p.deposeSIP ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
             <td class="text-center" style="max-width:120px; width:120px;">
