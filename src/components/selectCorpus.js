@@ -12,81 +12,91 @@ export function selectCorpus(onSelect) {
 	select.className = 'select-small';
 	select.id = 'corpus-select';
 
-	// Ajoute un placeholder
-	const placeholder = document.createElement('option');
-	placeholder.value = '';
-	placeholder.textContent = 'Choix du corpus';
-	placeholder.disabled = true;
-	placeholder.selected = true;
-	select.appendChild(placeholder);
+		// Remplit le select avec les corpus depuis l'API
+		fetchAllCorpus().then(corpusList => {
+			if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
+				// Ajoute l'option TOUS et la sélectionne par défaut
+				const allOption = document.createElement('option');
+				allOption.value = 'ALL';
+				allOption.textContent = 'TOUS';
+				allOption.dataset.corpus = '';
+				allOption.selected = true;
+				select.appendChild(allOption);
 
-	       // Remplit le select avec les corpus depuis l'API
-	       fetchAllCorpus().then(corpusList => {
-		       if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
-			       corpusList.data.forEach(corpus => {
-				       const option = document.createElement('option');
-				       option.value = corpus.idcorpus;
-				       // Utilise data-html pour Select2
-				       option.innerHTML = corpus.desciption_corpus
-					 ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
-					 : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
-				       option.textContent = corpus.name_corpus; // fallback pour accessibilité
-				       option.dataset.corpus = JSON.stringify({
-					       id: corpus.idcorpus,
-					       nom: corpus.name_corpus,
-					       description: corpus.desciption_corpus
-				       });
-				       select.appendChild(option);
-			       });
-			       // Initialise Select2 après le remplissage
-			       setTimeout(() => {
-				       if (window.$ && window.$.fn && window.$.fn.select2) {
-					       window.$(select).select2({
-						       width: 'resolve',
-						       templateResult: formatCorpusOption,
-						       templateSelection: formatCorpusSelection,
-						       dropdownParent: window.$(container)
-					       });
-				       }
-			       }, 0);
-		       }
-	       });
+				corpusList.data.forEach(corpus => {
+					const option = document.createElement('option');
+					option.value = corpus.idcorpus;
+					// Utilise data-html pour Select2
+					option.innerHTML = corpus.desciption_corpus
+					  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
+					  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
+					option.textContent = corpus.name_corpus; // fallback pour accessibilité
+					option.dataset.corpus = JSON.stringify({
+						id: corpus.idcorpus,
+						nom: corpus.name_corpus,
+						description: corpus.desciption_corpus
+					});
+					select.appendChild(option);
+				});
+				// Initialise Select2 après le remplissage
+				setTimeout(() => {
+					if (window.$ && window.$.fn && window.$.fn.select2) {
+						window.$(select).select2({
+							width: 'resolve',
+							templateResult: formatCorpusOption,
+							templateSelection: formatCorpusSelection,
+							dropdownParent: window.$(container)
+						});
+					}
+				}, 0);
+			}
+		});
 
 		       // Sélection native
-		       select.addEventListener('change', (e) => {
-			       const selectedOption = select.options[select.selectedIndex];
-			       if (selectedOption && selectedOption.dataset.corpus) {
-				       selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
-				       if (typeof onSelect === 'function') {
-					       onSelect(selectedCorpus);
-				       }
-			       } else {
-				       selectedCorpus = null;
-				       if (typeof onSelect === 'function') {
-					       onSelect(null);
-				       }
-			       }
-		       });
+	select.addEventListener('change', (e) => {
+		const selectedOption = select.options[select.selectedIndex];
+		if (selectedOption && selectedOption.value === 'ALL') {
+			selectedCorpus = 'ALL';
+			if (typeof onSelect === 'function') {
+				onSelect('ALL');
+			}
+		} else if (selectedOption && selectedOption.dataset.corpus) {
+			selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
+			if (typeof onSelect === 'function') {
+				onSelect(selectedCorpus);
+			}
+		} else {
+			selectedCorpus = null;
+			if (typeof onSelect === 'function') {
+				onSelect(null);
+			}
+		}
+	});
 
 		       // Sélection via Select2 (jQuery)
-		       setTimeout(() => {
-			       if (window.$ && window.$.fn && window.$.fn.select2) {
-				       window.$(select).on('change', function (e) {
-					       const selectedOption = select.options[select.selectedIndex];
-					       if (selectedOption && selectedOption.dataset.corpus) {
-						       selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
-						       if (typeof onSelect === 'function') {
-							       onSelect(selectedCorpus);
-						       }
-					       } else {
-						       selectedCorpus = null;
-						       if (typeof onSelect === 'function') {
-							       onSelect(null);
-						       }
-					       }
-				       });
-			       }
-		       }, 0);
+	setTimeout(() => {
+		if (window.$ && window.$.fn && window.$.fn.select2) {
+			window.$(select).on('change', function (e) {
+				const selectedOption = select.options[select.selectedIndex];
+				if (selectedOption && selectedOption.value === 'ALL') {
+					selectedCorpus = 'ALL';
+					if (typeof onSelect === 'function') {
+						onSelect('ALL');
+					}
+				} else if (selectedOption && selectedOption.dataset.corpus) {
+					selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
+					if (typeof onSelect === 'function') {
+						onSelect(selectedCorpus);
+					}
+				} else {
+					selectedCorpus = null;
+					if (typeof onSelect === 'function') {
+						onSelect(null);
+					}
+				}
+			});
+		}
+	}, 0);
 
 	container.appendChild(select);
 	return container;
