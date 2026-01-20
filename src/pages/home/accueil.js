@@ -23,15 +23,12 @@ export default function accueilPage() {
 	}
 	main.innerHTML = '';
 
+
+
 	const centerDiv = document.createElement('div');
-	centerDiv.className = 'centered-selects mb-3';
-
-	const selectCorpusDiv = document.createElement('div');
-	selectCorpusDiv.className = 'mb-2 small-centered-select';
-	selectCorpusDiv.appendChild(selectCorpus());
-	centerDiv.appendChild(selectCorpusDiv);
-
-
+	centerDiv.className = 'container my-4 d-flex justify-content-center';
+	const selectElement = selectCorpus();
+	centerDiv.appendChild(selectElement);
 	main.appendChild(centerDiv);
 
 	// Affiche le tableau a gauche de l'écran

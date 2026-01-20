@@ -2,10 +2,10 @@
 import { selectCorpus } from '../selectCorpus.js';
 import { createPaquet } from '../../API/paquet.js';
 import { createTypeDocumentSelector } from '../selectTypeDocument.js';
+import { createStatusSelector } from '../selectStatus.js';
 
-// Affiche une modale avec un formulaire pour créer un paquet
 export function afficherCardPaquetAddModal() {
-	// Supprime toute modale existante
+
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
@@ -98,6 +98,10 @@ export function afficherCardPaquetAddModal() {
 					<div id="type-document-select-container"></div>
 				</div>
 				<div class="col-md-6">
+					<label class="form-label">Statut :</label>
+					<div id="status-select-container"></div>
+				</div>
+				<div class="col-md-6">
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving">
 				</div>
@@ -128,7 +132,6 @@ export function afficherCardPaquetAddModal() {
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
 
-	// Ajout du sélecteur de corpus et du sélecteur de type de document
 	(async () => {
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
@@ -141,9 +144,14 @@ export function afficherCardPaquetAddModal() {
 			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId' });
 			typeDocContainer.appendChild(typeDocSelectorWrapper);
 		}
+
+		const statusContainer = form.querySelector('#status-select-container');
+		if (statusContainer) {
+			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId' });
+			statusContainer.appendChild(statusSelectorWrapper);
+		}
 	})();
 
-	// Ajout du submit (appel API création)
 	form.addEventListener('submit', async function(e) {
 		e.preventDefault();
 		const formData = new FormData(form);
@@ -158,6 +166,9 @@ export function afficherCardPaquetAddModal() {
 	// TypeDocumentId
 	const selectTypeDocEl = form.querySelector('#type-document-select-container select');
 	if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
+	// StatusId
+	const selectStatusEl = form.querySelector('#status-select-container select');
+	if (selectStatusEl) data.statusId = selectStatusEl.value;
 	// Commentaire
 	data.commentaire = data.comment;
 	delete data.comment;

@@ -6,11 +6,10 @@ let selectedCorpus = null;
 export function selectCorpus(onSelect) {
 	// Crée un conteneur principal
 	const container = document.createElement('div');
-	container.className = 'select-corpus-container';
 
 	// Crée le select natif
 	const select = document.createElement('select');
-	select.className = 'form-select select-small';
+	select.className = 'select-small';
 	select.id = 'corpus-select';
 
 	// Ajoute un placeholder

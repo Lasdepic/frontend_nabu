@@ -1,4 +1,7 @@
 import { selectCorpus } from '../selectCorpus.js';
+import { createTypeDocumentSelector } from '../selectTypeDocument.js';
+import { createStatusSelector } from '../selectStatus.js';
+import { editPaquet } from '../../API/paquet.js';
 
 // Affiche une modale avec un formulaire pour modifier le paquet
 export function afficherCardPaquetEditModal(paquet) {
@@ -91,6 +94,14 @@ export function afficherCardPaquetEditModal(paquet) {
 					<div id="corpus-select-container"></div>
 				</div>
 				<div class="col-md-6">
+					<label class="form-label">Type de document :</label>
+					<div id="type-document-select-container"></div>
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Statut :</label>
+					<div id="status-select-container"></div>
+				</div>
+				<div class="col-md-6">
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving" value="${paquet.searchArchiving || ''}">
 				</div>
@@ -122,28 +133,101 @@ export function afficherCardPaquetEditModal(paquet) {
 	`;
 
 	// Ajout du sélecteur de corpus à la place de l'input Corpus ID
-	setTimeout(() => {
+
+	(async () => {
+		// Corpus
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
 			const corpusSelector = selectCorpus();
-			// Préselectionne la valeur actuelle si possible
-			corpusSelector.addEventListener('DOMContentLoaded', () => {
+			corpusContainer.appendChild(corpusSelector);
+			// Préselection
+			setTimeout(() => {
 				if (paquet.corpusId) {
 					const select = corpusSelector.querySelector('select');
 					if (select) select.value = paquet.corpusId;
 				}
-			});
-			corpusContainer.appendChild(corpusSelector);
+			}, 0);
 		}
-	}, 0);
+		// Type de document
+		const typeDocContainer = form.querySelector('#type-document-select-container');
+		if (typeDocContainer) {
+			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId', value: paquet.typeDocumentId || paquet.typeDocument_id || '' });
+			typeDocContainer.appendChild(typeDocSelectorWrapper);
+		}
+		// Statut
+		const statusContainer = form.querySelector('#status-select-container');
+		if (statusContainer) {
+			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId', value: paquet.statusId || paquet.status_id || '' });
+			statusContainer.appendChild(statusSelectorWrapper);
+		}
+	})();
 
 	// Ajout du submit (à compléter avec l'appel API si besoin)
-	form.addEventListener('submit', function(e) {
+
+	form.addEventListener('submit', async function(e) {
 		e.preventDefault();
-		// Ici, vous pouvez récupérer les valeurs du formulaire et appeler l'API d'édition
-		// ...
+		const formData = new FormData(form);
+		const data = Object.fromEntries(formData.entries());
+		// Gestion des booléens
+		data.toDo = !!form.querySelector('[name="toDo"]').checked;
+		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
+		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
+		// CorpusId
+		const selectCorpusEl = form.querySelector('#corpus-select-container select');
+		if (selectCorpusEl) data.corpusId = selectCorpusEl.value;
+		// TypeDocumentId
+		const selectTypeDocEl = form.querySelector('#type-document-select-container select');
+		if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
+		// StatusId
+		const selectStatusEl = form.querySelector('#status-select-container select');
+		if (selectStatusEl) data.statusId = selectStatusEl.value;
+		// Commentaire
+		data.commentaire = data.comment;
+		delete data.comment;
+		// Vérification des champs obligatoires
+		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
+			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
+			return;
+		}
+		let res = null;
+		try {
+			res = await editPaquet(data);
+		} catch (e) {
+			res = null;
+		}
 		overlay.remove();
+		// Afficher une popup de succès ou d'erreur
+		if (res && (res.success || res.status === 'success')) {
+			showPopup('Le paquet a bien été modifié.', true);
+		} else if (res && res.fields) {
+			showPopup('Champs manquants : ' + res.fields.join(', '), false);
+		} else if (res && res.message) {
+			showPopup(res.message, false);
+		} else {
+			showPopup("Erreur lors de la modification du paquet.", false);
+		}
 	});
+
+	// Fonction utilitaire pour afficher une popup
+	function showPopup(message, success = true) {
+		const popup = document.createElement('div');
+		popup.textContent = message;
+		popup.style.position = 'fixed';
+		popup.style.top = '30px';
+		popup.style.left = '50%';
+		popup.style.transform = 'translateX(-50%)';
+		popup.style.background = success ? '#28a745' : '#dc3545';
+		popup.style.color = '#fff';
+		popup.style.padding = '16px 32px';
+		popup.style.borderRadius = '8px';
+		popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+		popup.style.zIndex = 3000;
+		popup.style.fontSize = '1.1rem';
+		document.body.appendChild(popup);
+		setTimeout(() => {
+			popup.remove();
+		}, 2500);
+	}
 
 	modal.appendChild(closeBtn);
 	modal.appendChild(form);
