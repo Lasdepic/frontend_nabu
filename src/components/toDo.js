@@ -10,6 +10,13 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 		conteneur.id = conteneurId;
 		document.body.appendChild(conteneur);
 	}
+
+	// bloc le tableau pendant le scroll
+	conteneur.style.display = 'block';
+	conteneur.style.position = 'sticky';
+	conteneur.style.top = '80px'; 
+	conteneur.style.zIndex = '1000';
+
 	// Titre tableau à faire
 	conteneur.innerHTML = `<div class="bg-dark text-white text-center py-2 rounded mb-3" style="font-size:1rem;font-weight:400;">A Faire</div>`;
 
@@ -27,7 +34,6 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 		return;
 	}
 
-	// Bloc de cotes façon "carte" bleu clair
 	       const row = document.createElement('div');
 	       row.className = 'row g-2';
 	       paquets.forEach((p, idx) => {
