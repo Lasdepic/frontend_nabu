@@ -139,15 +139,8 @@ export function afficherCardPaquetEditModal(paquet) {
 		// Corpus
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
-			const corpusSelector = selectCorpus();
-			corpusContainer.appendChild(corpusSelector);
-			// Préselection
-			setTimeout(() => {
-				if (paquet.corpusId) {
-					const select = corpusSelector.querySelector('select');
-					if (select) select.value = paquet.corpusId;
-				}
-			}, 0);
+			   const corpusSelector = selectCorpus(undefined, paquet.corpusId);
+			   corpusContainer.appendChild(corpusSelector);
 		}
 		// Type de document
 		const typeDocContainer = form.querySelector('#type-document-select-container');
@@ -193,6 +186,12 @@ export function afficherCardPaquetEditModal(paquet) {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été modifié.', true);
+			if (window.$ && window.$.fn && window.$.fn.DataTable) {
+			  const oldTable = window.$('#tableau-paquet');
+			  if (oldTable.length && oldTable.hasClass('dataTable')) {
+			    oldTable.DataTable().destroy();
+			  }
+			}
 			afficherTableauPaquet('tableau-paquet-conteneur');
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
