@@ -1,10 +1,29 @@
+
+.navbar-brand.nabu-title {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-size: 2.8rem !important;
+  letter-spacing: 0.1em;
+  text-shadow: 1px 1px 2px #2222, 0 0 1px #fff8;
+}
+
+body, main {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  background-color: #EEEEEE;
+}
+
+header {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+}
+
 .select-small {
 	width: 340px;
 	min-width: 180px;
 	max-width: 100%;
 }
-
-
 
 .select2-container--default .select2-selection--single {
 	font-size: 1.05rem;

@@ -1,6 +1,7 @@
-import { selectCorpus } from '../selectCorpus.js';
-import { createTypeDocumentSelector } from '../selectTypeDocument.js';
-import { createStatusSelector } from '../selectStatus.js';
+import { afficherTableauPaquet } from '../tableauPaquet.js';
+import { selectCorpus } from '../selecteur/selectCorpus.js';
+import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
+import { createStatusSelector } from '../selecteur/selectStatus.js';
 import { editPaquet } from '../../API/paquet.js';
 
 // Affiche une modale avec un formulaire pour modifier le paquet
@@ -181,14 +182,7 @@ export function afficherCardPaquetEditModal(paquet) {
 		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
 		if (selectStatusEl) data.statusId = selectStatusEl.value;
-		// Commentaire
-		data.commentaire = data.comment;
-		delete data.comment;
-		// Vérification des champs obligatoires
-		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
-			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
-			return;
-		}
+		// Commentaire : ne rien faire, le champ s'appelle déjà 'comment' dans le formData
 		let res = null;
 		try {
 			res = await editPaquet(data);
@@ -199,6 +193,7 @@ export function afficherCardPaquetEditModal(paquet) {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été modifié.', true);
+			afficherTableauPaquet('tableau-paquet-conteneur');
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {

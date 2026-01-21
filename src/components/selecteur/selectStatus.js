@@ -1,5 +1,5 @@
 
-import { fetchAllTypeDocument } from '../API/status.js';
+import { fetchAllStatus } from '../../API/status.js';
 
 export async function createStatusSelector({ id = '', name = '', onChange = null, value = '' } = {}) {
     const select = document.createElement('select');
@@ -13,7 +13,7 @@ export async function createStatusSelector({ id = '', name = '', onChange = null
     defaultOption.textContent = '-- Sélectionner un statut --';
     select.appendChild(defaultOption);
 
-    let statusList = await fetchAllTypeDocument();
+    let statusList = await fetchAllStatus();
     if (statusList && statusList.data) statusList = statusList.data;
     if (Array.isArray(statusList)) {
         statusList.forEach(status => {
@@ -34,3 +34,4 @@ export async function createStatusSelector({ id = '', name = '', onChange = null
     wrapper.appendChild(select);
     return wrapper;
 }
+

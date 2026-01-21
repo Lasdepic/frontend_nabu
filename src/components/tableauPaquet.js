@@ -3,6 +3,7 @@ import { fetchAllPaquets } from '../API/paquet.js';
 import { fetchAllCorpus } from '../API/corpus.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
+import { createDateFilter } from './filterDate.js';
 
 export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
     let conteneur = document.getElementById(conteneurId);
@@ -41,26 +42,53 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.head.appendChild(style);
     }
     conteneur.innerHTML = `
-    <div style="max-width:1200px; margin-left:10px;">
+    <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
         <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2">
             <div class="col-auto" id="tableau-paquet-length-col"></div>
+            <div class="col-auto" id="tableau-paquet-date-filter-col"></div>
             <div class="col d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
         </div>
-        <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%;">
-            <thead>
-                <tr>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Nom de dossier</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">Cote</th>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Corpus</th>
-                    <th class="text-center" scope="col" style="max-width:200px; width:200px;">Commentaire</th>
-                    <th class="text-center" scope="col" style="max-width:150px; width:150px;">Déposé en SIP</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">Envoyé</th>
-                    <th class="text-center" scope="col" style="max-width:120px; width:120px;">À faire</th>
-                </tr>
-            </thead>
+        <div id="tableau-paquet-scroll" style="overflow-x:auto;">
+            <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
+                <thead>
+                    <tr>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Nom de dossier</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">Cote</th>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Corpus</th>
+                        <th class="text-center" scope="col" style="max-width:200px; width:200px;">Commentaire</th>
+                        <th class="text-center" scope="col" style="max-width:150px; width:150px;">Déposé en SIP</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">Envoyé</th>
+                        <th class="text-center" scope="col" style="max-width:120px; width:120px;">À faire</th>
+                    </tr>
+                </thead>
             <tbody></tbody>
-        </table>
+            </table>
+        </div>
     </div>`;
+
+    // Ajout du filtre par date à gauche du bouton Ajouter
+    const dateFilterCol = conteneur.querySelector('#tableau-paquet-date-filter-col');
+    let sortOrder = 'desc';
+    if (dateFilterCol) {
+        const dateFilter = createDateFilter((order) => {
+            sortOrder = order;
+            renderTable();
+        });
+        dateFilterCol.appendChild(dateFilter);
+    }
+
+    // Responsive : scroll horizontal sur petit écran uniquement
+    const scrollDiv = conteneur.querySelector('#tableau-paquet-scroll');
+    function setTableScroll(e) {
+        if (e.matches) {
+            scrollDiv.style.overflowX = 'auto';
+        } else {
+            scrollDiv.style.overflowX = 'unset';
+        }
+    }
+    const mq = window.matchMedia('(max-width: 991.98px)');
+    setTableScroll(mq);
+    mq.addEventListener('change', setTableScroll);
 
     // Charge les corpus et les paquets
     const [corpusResult, paquetsResult] = await Promise.all([
@@ -78,35 +106,47 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     corpusList.forEach(c => {
         corpusDict[c.idcorpus || c.idCorpus] = c.name_corpus || c.nameCorpus;
     });
-    // Filtre par corpus si demandé
-    if (filterCorpusId) {
-        paquets = paquets.filter(p => String(p.corpusId) === String(filterCorpusId));
-    }
-    const tbody = conteneur.querySelector('tbody');
-    tbody.innerHTML = paquets.map((p, idx) => `
-        <tr data-paquet-idx="${idx}" style="cursor:pointer;">
-            <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
-            <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
-            <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
-            <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
-            <td class="text-center" style="max-width:150px; width:150px;">${p.deposeSIP ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
-            <td class="text-center" style="max-width:120px; width:120px;">
-                <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
-            </td>
-            <td class="text-center" style="max-width:120px; width:120px;">
-                <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
-            </td>
-        </tr>
-    `).join('');
 
-    // Ajoute un event listener sur chaque ligne pour afficher la card du paquet dans une modale centrée
-    Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
-        tr.addEventListener('click', function() {
-            const idx = this.getAttribute('data-paquet-idx');
-            const paquet = paquets[idx];
-            afficherCardPaquetModal(paquet);
+    function renderTable() {
+        let filteredPaquets = paquets;
+        if (filterCorpusId) {
+            filteredPaquets = filteredPaquets.filter(p => String(p.corpusId) === String(filterCorpusId));
+        }
+        // ...
+        // Tri par date
+        filteredPaquets = filteredPaquets.slice().sort((a, b) => {
+            const dateA = new Date(a.lastmodifDate || a.date || '');
+            const dateB = new Date(b.lastmodifDate || b.date || '');
+            if (isNaN(dateA) && isNaN(dateB)) return 0;
+            if (isNaN(dateA)) return sortOrder === 'asc' ? 1 : -1;
+            if (isNaN(dateB)) return sortOrder === 'asc' ? -1 : 1;
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
-    });
+        const tbody = conteneur.querySelector('tbody');
+        tbody.innerHTML = filteredPaquets.map((p, idx) => `
+            <tr data-paquet-idx="${idx}" style="cursor:pointer;">
+                <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
+                <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
+                <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
+                <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
+                <td class="text-center" style="max-width:150px; width:150px;">${p.deposeSIP ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
+                <td class="text-center" style="max-width:120px; width:120px;">
+                    <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
+                </td>
+                <td class="text-center" style="max-width:120px; width:120px;">
+                    <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
+                </td>
+            </tr>
+        `).join('');
+        Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
+            tr.addEventListener('click', function() {
+                const idx = this.getAttribute('data-paquet-idx');
+                const paquet = filteredPaquets[idx];
+                afficherCardPaquetModal(paquet);
+            });
+        });
+    }
+    renderTable();
 
     function addPaquet() {
         const lengthCol = document.getElementById('tableau-paquet-length-col');

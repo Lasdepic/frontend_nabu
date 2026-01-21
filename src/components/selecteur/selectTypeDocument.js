@@ -1,11 +1,10 @@
 
-import { fetchAllTypeDocument } from '../API/typeDocument.js';
+import { fetchAllTypeDocument } from '../../API/typeDocument.js';
 
 export async function createTypeDocumentSelector({ id = '', name = '', onChange = null, value = '' } = {}) {
 	const select = document.createElement('select');
 	if (id) select.id = id;
 	if (name) select.name = name;
-	// Ajout des classes Bootstrap pour un select stylé
 	select.className = 'form-select type-document-selector';
 
 	// Option par défaut
@@ -30,7 +29,6 @@ export async function createTypeDocumentSelector({ id = '', name = '', onChange 
 		select.addEventListener('change', onChange);
 	}
 
-	// Encapsuler dans un div Bootstrap pour le layout
 	const wrapper = document.createElement('div');
 	wrapper.className = 'mb-3';
 	wrapper.appendChild(select);

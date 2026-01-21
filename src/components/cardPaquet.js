@@ -72,7 +72,7 @@ export function afficherCardPaquetModal(paquet) {
 	document.body.appendChild(overlay);
 }
 import { fetchOnePaquet } from '../API/paquet.js';
-import { selectCorpus } from './selectCorpus.js';
+import { selectCorpus } from './selecteur/selectCorpus.js';
 
 
 export function createCardPaquet(paquet) {
@@ -97,6 +97,7 @@ export function createCardPaquet(paquet) {
 		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Répertoire des images microfilms :</span> ${paquet.microFilmImage || ''}</div>
 		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Répertoire des images couleurs :</span> ${paquet.imageColor || ''}</div>
 		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Recherche Archivage :</span> ${paquet.searchArchiving || ''}</div>
+		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Status :</span> ${paquet.name_status || ''}</div>
 		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Date de la dernière modification :</span> ${paquet.lastmodifDate || ''}</div>
 
 		<div style="display: flex; align-items: center; gap: 24px; margin: 18px 0 8px 0;">
@@ -130,10 +131,8 @@ export function createCardPaquet(paquet) {
 	if (deleteBtn) {
 		deleteBtn.addEventListener('click', () => {
 			if (confirm('Voulez-vous vraiment supprimer ce paquet ?')) {
-				// TODO: Ajouter la logique de suppression ici (API, etc.)
 				const overlay = document.getElementById('paquet-modal-overlay');
 				if (overlay) overlay.remove();
-				// Afficher un message ou rafraîchir la liste, etc.
 			}
 		});
 	}
