@@ -68,14 +68,11 @@ export async function editPaquet(paquetData) {
 }
 
 // Supprimer un paquet
-export async function deletePaquet(paquetId) {
+export async function deletePaquet(cote) {
 	try {
-		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=delete-paquet', {
+		const url = `http://localhost/stage/backend_nabu/index.php?action=delete-paquet&cote=${encodeURIComponent(cote)}`;
+		const response = await fetch(url, {
 			method: 'DELETE',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ id: paquetId }),
 		});
 		return await response.json();
 	} catch (err) {
