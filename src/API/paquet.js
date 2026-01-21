@@ -42,15 +42,27 @@ export async function createPaquet(paquetData) {
 // Modifier un paquet
 export async function editPaquet(paquetData) {
 	try {
-		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=edit-paquet', {
-			method: 'PUT',
+		   const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=edit-paquet', {
+			   method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(paquetData),
 		});
-		return await response.json();
+		   let text = await response.text();
+		   let result = null;
+		   try {
+			   result = JSON.parse(text);
+		   } catch (jsonErr) {
+			   console.error('Réponse non JSON du backend:', text);
+			   return null;
+		   }
+		   if (!response.ok) {
+			   console.error('Erreur backend:', result);
+		   }
+		   return result;
 	} catch (err) {
+		console.error('Erreur JS/fetch:', err);
 		return null;
 	}
 }
