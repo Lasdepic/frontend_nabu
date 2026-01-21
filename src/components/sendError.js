@@ -28,7 +28,7 @@ export async function afficherSendErrorPaquet(conteneurId = 'to-do-paquet-conten
         return;
     }
   
-    paquets = paquets.filter(p => p.status === 'ENVOI_EN_ERREUR');
+    paquets = paquets.filter(p => p.statusId === 5);
     if (paquets.length === 0) {
         conteneur.innerHTML += '<div class="text-muted text-center">Aucun paquet en erreur d\'envoi.</div>';
         return;

@@ -1,5 +1,5 @@
 
-import { fetchAllTypeDocument } from '../API/typeDocument.js';
+import { fetchAllTypeDocument } from '../../API/typeDocument.js';
 
 export async function createTypeDocumentSelector({ id = '', name = '', onChange = null, value = '' } = {}) {
 	const select = document.createElement('select');

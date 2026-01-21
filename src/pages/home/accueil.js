@@ -1,6 +1,6 @@
 
 
-import { selectCorpus } from '../../components/selectCorpus.js';
+import { selectCorpus } from '../../components/selecteur/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
 import { afficherTableauToDoPaquet } from '../../components/toDo.js';
 import { afficherSendErrorPaquet } from '../../components/sendError.js';

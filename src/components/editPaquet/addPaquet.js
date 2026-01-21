@@ -1,8 +1,8 @@
 
-import { selectCorpus } from '../selectCorpus.js';
+import { selectCorpus } from '../selecteur/selectCorpus.js';
 import { createPaquet } from '../../API/paquet.js';
-import { createTypeDocumentSelector } from '../selectTypeDocument.js';
-import { createStatusSelector } from '../selectStatus.js';
+import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
+import { createStatusSelector } from '../selecteur/selectStatus.js';
 
 export function afficherCardPaquetAddModal() {
 

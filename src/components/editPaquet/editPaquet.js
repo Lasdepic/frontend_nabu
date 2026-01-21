@@ -1,5 +1,5 @@
 import { selectCorpus } from '../selectCorpus.js';
-import { createTypeDocumentSelector } from '../selectTypeDocument.js';
+import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selectStatus.js';
 import { editPaquet } from '../../API/paquet.js';
 
