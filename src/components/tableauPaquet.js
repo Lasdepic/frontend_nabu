@@ -129,7 +129,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
                 <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
                 <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
-                <td class="text-center" style="max-width:150px; width:150px;">${p.deposeSIP ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
+                    <td class="text-center" style="max-width:150px; width:150px;">${p.filedSip ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
                 <td class="text-center" style="max-width:120px; width:120px;">
                     <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
                 </td>

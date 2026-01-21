@@ -1,4 +1,3 @@
-
 .navbar-brand.nabu-title {
   font-family: 'Cormorant Garamond', serif !important;
   font-size: 2.8rem !important;
@@ -29,5 +28,14 @@ header {
 	font-size: 1.05rem;
 	min-height: 38px;
 	padding: 6px 18px;
+}
+
+/* Colonne latérale sticky lors du scroll */
+.side-fixed {
+  position: sticky;
+  top: 2rem;
+  z-index: 10;
+  height: fit-content;
+  min-width: 0;
 }
 

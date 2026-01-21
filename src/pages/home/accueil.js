@@ -1,96 +1,121 @@
-
-
 import { selectCorpus } from '../../components/selecteur/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
 import { afficherTableauToDoPaquet } from '../../components/toDo.js';
 import { afficherSendErrorPaquet } from '../../components/sendError.js';
 
-
 export default function accueilPage() {
-       // Récupère l'id utilisateur connecté et le stocke dans le localStorage
-       fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' })
-              .then(r => r.json())
-              .then(data => {
-                     if (data && data.authenticated && data.user && data.user.id) {
-                            localStorage.setItem('userId', data.user.id);
-                     } else {
-                            localStorage.removeItem('userId');
-                     }
-              });
-       let main = document.querySelector('main');
-       if (!main) {
-              main = document.createElement('main');
-              document.body.appendChild(main);
-       }
-       main.style.backgroundColor = '#EEEEEE';
-       main.style.minHeight = '100vh';
-       main.innerHTML = '';
 
-       const centerDiv = document.createElement('div');
-       centerDiv.className = 'container my-4 d-flex justify-content-center';
-       // Ajoute le selectCorpus avec callback pour filtrer
-       const selectElement = selectCorpus(onCorpusSelect);
-       centerDiv.appendChild(selectElement);
-       main.appendChild(centerDiv);
+    // Vérification utilisateur connecté
+    fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', {
+        credentials: 'include'
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data?.authenticated && data?.user?.id) {
+                localStorage.setItem('userId', data.user.id);
+            } else {
+                localStorage.removeItem('userId');
+            }
+        });
 
+    let main = document.querySelector('main');
+    if (!main) {
+        main = document.createElement('main');
+        document.body.appendChild(main);
+    }
 
+    main.className = 'bg-light min-vh-100 py-4';
+    main.innerHTML = '';
 
-       // Conteneur responsive
-       const rowDiv = document.createElement('div');
-       rowDiv.className = 'row';
+    /* =======================
+       CONTAINER PRINCIPAL
+    ======================= */
+    const container = document.createElement('div');
+    container.className = 'container';
 
-       // Tableau principal 
-       const tableauDiv = document.createElement('div');
-       tableauDiv.className = 'col-12 col-lg-8 mt-4';
-       tableauDiv.id = 'tableau-paquet-conteneur';
-       rowDiv.appendChild(tableauDiv);
+    /* =======================
+       SELECT CORPUS
+    ======================= */
+    const selectRow = document.createElement('div');
+    selectRow.className = 'row justify-content-center mb-4';
 
+    const selectCol = document.createElement('div');
+    selectCol.className = 'col-12 col-md-6 col-lg-4';
 
-       // Colonne droite pour ToDo et SendError
-       const rightColDiv = document.createElement('div');
-       rightColDiv.className = 'col-12 col-lg-4 mt-4 d-flex flex-column align-items-end';
-       rightColDiv.style.maxWidth = '340px';
-       rightColDiv.style.marginLeft = 'auto';
-       rightColDiv.style.marginRight = '80px';
-       rightColDiv.style.padding = '0';
-       rightColDiv.style.background = 'none';
-       rightColDiv.style.border = 'none';
+    const selectElement = selectCorpus(onCorpusSelect);
+    selectCol.appendChild(selectElement);
+    selectRow.appendChild(selectCol);
+    container.appendChild(selectRow);
 
-       // ToDo conteneur
-       const toDoDiv = document.createElement('div');
-       toDoDiv.id = 'to-do-paquet-conteneur';
-       toDoDiv.style.background = '#f8f9fa';
-       toDoDiv.style.borderRadius = '10px';
-       toDoDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
-       toDoDiv.style.padding = '18px 10px 10px 10px';
-       toDoDiv.style.width = '100%';
-       toDoDiv.style.marginBottom = '18px';
-       toDoDiv.style.height = 'fit-content';
-       rightColDiv.appendChild(toDoDiv);
+    /* =======================
+       CONTENU PRINCIPAL
+    ======================= */
+    const contentRow = document.createElement('div');
+    contentRow.className = 'row g-4';
 
-       // SendError conteneur
-       const sendErrorDiv = document.createElement('div');
-       sendErrorDiv.id = 'send-error-paquet-conteneur';
-       sendErrorDiv.style.background = '#f8f9fa';
-       sendErrorDiv.style.borderRadius = '10px';
-       sendErrorDiv.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
-       sendErrorDiv.style.padding = '18px 10px 10px 10px';
-       sendErrorDiv.style.width = '100%';
-       sendErrorDiv.style.height = 'fit-content';
-       rightColDiv.appendChild(sendErrorDiv);
+    /* ===== Tableau principal ===== */
+    const tableauCol = document.createElement('div');
+    tableauCol.className = 'col-12 col-lg-9';
 
-       rowDiv.appendChild(rightColDiv);
-       main.appendChild(rowDiv);
+    const tableauCard = document.createElement('div');
+    tableauCard.className = 'card shadow-sm h-100';
 
-       afficherTableauPaquet('tableau-paquet-conteneur');
-       afficherTableauToDoPaquet('to-do-paquet-conteneur');
-       afficherSendErrorPaquet('send-error-paquet-conteneur');
+    const tableauBody = document.createElement('div');
+    tableauBody.className = 'card-body';
+    tableauBody.id = 'tableau-paquet-conteneur';
 
-       // Selecteur pour filtrer
-       function onCorpusSelect(selectedCorpus) {
-              afficherTableauPaquet('tableau-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
-              afficherTableauToDoPaquet('to-do-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
-              afficherSendErrorPaquet('send-error-paquet-conteneur', selectedCorpus ? selectedCorpus.id : null);
-       }
+    tableauCard.appendChild(tableauBody);
+    tableauCol.appendChild(tableauCard);
 
+    /* ===== Colonne droite ===== */
+    const sideColWrapper = document.createElement('div');
+    sideColWrapper.className = 'col-12 col-lg-3';
+
+    // Colonne sticky
+    const sideCol = document.createElement('div');
+    sideCol.className = 'side-fixed';
+
+    /* ToDo */
+    const todoCard = document.createElement('div');
+    todoCard.className = 'card shadow-sm mb-4';
+
+    const todoBody = document.createElement('div');
+    todoBody.className = 'card-body';
+    todoBody.id = 'to-do-paquet-conteneur';
+
+    todoCard.appendChild(todoBody);
+
+    /* Send Error */
+    const errorCard = document.createElement('div');
+    errorCard.className = 'card shadow-sm';
+
+    const errorBody = document.createElement('div');
+    errorBody.className = 'card-body';
+    errorBody.id = 'send-error-paquet-conteneur';
+
+    errorCard.appendChild(errorBody);
+
+    sideCol.appendChild(todoCard);
+    sideCol.appendChild(errorCard);
+    sideColWrapper.appendChild(sideCol);
+
+    /* Assemblage */
+    contentRow.appendChild(tableauCol);
+    contentRow.appendChild(sideColWrapper);
+    container.appendChild(contentRow);
+    main.appendChild(container);
+
+    /* =======================
+       RENDUS
+    ======================= */
+    afficherTableauPaquet('tableau-paquet-conteneur');
+    afficherTableauToDoPaquet('to-do-paquet-conteneur');
+    afficherSendErrorPaquet('send-error-paquet-conteneur');
+
+    function onCorpusSelect(selectedCorpus) {
+        const id = selectedCorpus ? selectedCorpus.id : null;
+        afficherTableauPaquet('tableau-paquet-conteneur', id);
+        afficherTableauToDoPaquet('to-do-paquet-conteneur', id);
+        afficherSendErrorPaquet('send-error-paquet-conteneur', id);
+    }
 }

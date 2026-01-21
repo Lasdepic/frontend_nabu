@@ -162,19 +162,31 @@ export function afficherCardPaquetAddModal() {
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
 	// CorpusId
 	const selectCorpusEl = form.querySelector('#corpus-select-container select');
-	if (selectCorpusEl) data.corpusId = selectCorpusEl.value;
+	if (selectCorpusEl && selectCorpusEl.value) {
+		data.corpusId = selectCorpusEl.value;
+	} else {
+		delete data.corpusId;
+	}
 	// TypeDocumentId
 	const selectTypeDocEl = form.querySelector('#type-document-select-container select');
-	if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
+	if (selectTypeDocEl && selectTypeDocEl.value) {
+		data.typeDocumentId = selectTypeDocEl.value;
+	} else {
+		delete data.typeDocumentId;
+	}
 	// StatusId
 	const selectStatusEl = form.querySelector('#status-select-container select');
-	if (selectStatusEl) data.statusId = selectStatusEl.value;
+	if (selectStatusEl && selectStatusEl.value) {
+		data.statusId = selectStatusEl.value;
+	} else {
+		delete data.statusId;
+	}
 	// Commentaire
 	data.commentaire = data.comment;
 	delete data.comment;
 		// Vérification des champs obligatoires
-		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
-			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
+		if (!data.folderName || !data.cote) {
+			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;
 		}
 		// Appel API
@@ -184,6 +196,9 @@ export function afficherCardPaquetAddModal() {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
+			if (window.afficherTableauPaquet) {
+				window.afficherTableauPaquet('tableau-paquet-conteneur');
+			}
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {
