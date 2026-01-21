@@ -67,6 +67,7 @@ export function afficherCardPaquetEditModal(paquet) {
 				<div class="col-md-6">
 					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
 					<input type="text" class="form-control" name="cote" value="${paquet.cote || ''}" required>
+					<input type="hidden" name="oldCote" value="${paquet.cote || ''}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
@@ -138,6 +139,10 @@ export function afficherCardPaquetEditModal(paquet) {
 		e.preventDefault();
 		const formData = new FormData(form);
 		const data = Object.fromEntries(formData.entries());
+		// Ajout explicite de oldCote (pour éviter tout souci si le champ est modifié dynamiquement)
+		if (!data.oldCote && paquet.cote) {
+			data.oldCote = paquet.cote;
+		}
 		// Gestion des booléens
 		data.toDo = !!form.querySelector('[name="toDo"]').checked;
 		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
@@ -213,7 +218,6 @@ export function afficherCardPaquetEditModal(paquet) {
 
 	modalContent.appendChild(modalHeader);
 	modalContent.appendChild(form);
-	// modalContent.appendChild(modalFooter);
 	modal.appendChild(modalContent);
 	overlay.appendChild(modal);
 
