@@ -9,7 +9,7 @@ export default function loginPage() {
 
 	const main = document.querySelector('main') || createMain();
 	main.innerHTML = `
-		<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background: linear-gradient(135deg, #e0e7ff 0%, #f1f1f1 100%);">
+		<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background: #F8F9FA);">
 			<div class="card p-5 shadow-lg animate__animated animate__fadeIn" style="min-width: 400px; max-width: 500px; border-radius: 16px; margin-bottom: 20vh">
 				<div class="text-center mb-4">
 					<img src="public/image/favicon.ico" alt="Logo" style="width: 110px; height: 80px; margin-bottom: 10px;">

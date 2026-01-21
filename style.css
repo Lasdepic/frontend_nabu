@@ -1,3 +1,29 @@
+
+/* Personnalisation du burger */
+.navbar-toggler {
+  border-color: #F8F9FA !important;
+}
+.navbar-toggler .navbar-toggler-icon {
+  background-image: none !important;
+  position: relative;
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-block;
+}
+.navbar-toggler .navbar-toggler-icon::before,
+.navbar-toggler .navbar-toggler-icon::after,
+.navbar-toggler .navbar-toggler-icon span {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: #F8F9FA;
+  margin: 0.3em 0;
+  border-radius: 2px;
+}
+.navbar-toggler .navbar-toggler-icon span {
+  margin: 0.3em 0;
+}
 .navbar-brand.nabu-title {
   font-family: 'Cormorant Garamond', serif !important;
   font-size: 2.8rem !important;
