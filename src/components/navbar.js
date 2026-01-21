@@ -1,8 +1,17 @@
-export function createNavbar() {
+export function createNavbar(isLoginPage = false) {
+    if (isLoginPage) {
+        return `
+            <nav class="navbar navbar-expand-lg" style="background-color: #343A40; padding: 1.5rem 2rem;">
+                <div class="container-fluid">
+                    <a class="navbar-brand nabu-title text-white fw-bold" href="#">NABU</a>
+                </div>
+            </nav>
+        `;
+    }
     return `
-        <nav class="navbar navbar-expand-lg" style="background-color: #4a5568; padding: 1.5rem 2rem;">
+        <nav class="navbar navbar-expand-lg" style="background-color: #343A40; padding: 1.5rem 2rem;">
             <div class="container-fluid">
-                <a class="navbar-brand text-white fw-bold fs-4" href="index.html">NABU</a>
+                <a class="navbar-brand nabu-title text-white fw-bold" href="index.html">NABU</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -21,19 +30,24 @@ export function createNavbar() {
     `;
 }
 
-export function initNavbar(selector = 'header') {
+export function initNavbar(selector = 'header', isLoginPage = false) {
     const headerElement = document.querySelector(selector);
     if (headerElement) {
-        headerElement.innerHTML = createNavbar();
-        
-        // Gérer la déconnexion
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.removeItem('token');
-                window.location.href = 'index.html';
-            });
+        headerElement.innerHTML = createNavbar(isLoginPage);
+        if (!isLoginPage) {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                        logoutBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            try {
+                                const { logout } = await import('../API/auth.js');
+                                await logout();
+                            } catch (err) {
+                                console.error('Erreur lors de la déconnexion', err);
+                            }
+                            window.location.href = 'index.html';
+                        });
+            }
         }
     }
 }
