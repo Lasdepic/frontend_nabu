@@ -4,87 +4,69 @@ import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
 import { editPaquet } from '../../API/paquet.js';
 
-// Affiche une modale avec un formulaire pour modifier le paquet
+// Affiche une modale avec un formulaire pour modifier le paquet, style Bootstrap harmonisé avec addPaquet.js
 export function afficherCardPaquetEditModal(paquet) {
 	// Supprime toute modale existante
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
-	// Overlay
+	// Overlay Bootstrap style
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
+	overlay.className = 'modal fade show';
+	overlay.style.display = 'block';
+	overlay.style.background = 'rgba(0,0,0,0.5)';
 	overlay.style.position = 'fixed';
 	overlay.style.top = 0;
 	overlay.style.left = 0;
 	overlay.style.width = '100vw';
 	overlay.style.height = '100vh';
-	overlay.style.background = 'rgba(0,0,0,0.5)';
-	overlay.style.display = 'flex';
-	overlay.style.alignItems = 'center';
-	overlay.style.justifyContent = 'center';
 	overlay.style.zIndex = 2000;
 
-	// Modale
+	// Modal dialog
 	const modal = document.createElement('div');
-	modal.style.position = 'relative';
-	modal.style.background = '#fff';
-	modal.style.borderRadius = '10px';
-	modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.25)';
-	modal.style.padding = '24px 16px 16px 16px';
-	modal.style.maxWidth = '650px';
+	modal.className = 'modal-dialog modal-dialog-centered';
+	modal.style.maxWidth = '700px';
 	modal.style.width = '100%';
-	modal.style.maxHeight = '90vh';
-	modal.style.overflowY = 'auto';
 
-	// Bouton de fermeture
+	// Modal content
+	const modalContent = document.createElement('div');
+	modalContent.className = 'modal-content shadow-lg';
+
+	// Modal header
+	const modalHeader = document.createElement('div');
+	modalHeader.className = 'modal-header';
+	const title = document.createElement('h5');
+	title.className = 'modal-title fw-bold';
+	title.textContent = 'Modification d’un paquet';
+
 	const closeBtn = document.createElement('button');
-	closeBtn.innerHTML = 'X';
+	closeBtn.type = 'button';
+	closeBtn.className = 'btn-close';
 	closeBtn.setAttribute('aria-label', 'Fermer');
-	closeBtn.style.position = 'absolute';
-	closeBtn.style.top = '8px';
-	closeBtn.style.right = '16px';
-	closeBtn.style.left = 'auto';
-	closeBtn.style.transform = 'none';
-	closeBtn.style.width = '44px';
-	closeBtn.style.height = '44px';
-	closeBtn.style.display = 'flex';
-	closeBtn.style.alignItems = 'center';
-	closeBtn.style.justifyContent = 'center';
-	closeBtn.style.fontSize = '1.5rem';
-	closeBtn.style.background = '#dc3545';
-	closeBtn.style.border = 'none';
-	closeBtn.style.borderRadius = '50%';
-	closeBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-	closeBtn.style.cursor = 'pointer';
-	closeBtn.style.color = '#fff';
-	closeBtn.style.zIndex = 10;
-	closeBtn.style.transition = 'background 0.2s, color 0.2s';
-	closeBtn.addEventListener('mouseenter', () => {
-		closeBtn.style.background = '#bb2d3b';
-	});
-	closeBtn.addEventListener('mouseleave', () => {
-		closeBtn.style.background = '#dc3545';
-	});
 	closeBtn.addEventListener('click', () => overlay.remove());
 
-	// Formulaire d'édition
+	modalHeader.appendChild(title);
+	modalHeader.appendChild(closeBtn);
+
+	// Modal body (form)
 	const form = document.createElement('form');
+	form.className = 'modal-body';
 	const connectedUserId = localStorage.getItem('userId') || '';
 	form.innerHTML = `
-		<div class="fw-bold fs-3 text-center mb-4">Modification d’un paquet</div>
 		<div class="container-fluid">
 			<div class="row g-3">
 				<div class="col-md-6">
-					<label class="form-label">Nom dossier :</label>
-					<input type="text" class="form-control" name="folderName" value="${paquet.folderName || ''}">
+					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
+					<input type="text" class="form-control" name="folderName" value="${paquet.folderName || ''}" required>
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images autre :</label>
 					<input type="text" class="form-control" name="microFilmImage" value="${paquet.microFilmImage || ''}">
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">Cote :</label>
-					<input type="text" class="form-control" name="cote" value="${paquet.cote || ''}">
+					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
+					<input type="text" class="form-control" name="cote" value="${paquet.cote || ''}" required>
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
@@ -106,7 +88,7 @@ export function afficherCardPaquetEditModal(paquet) {
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving" value="${paquet.searchArchiving || ''}">
 				</div>
-				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center">
+				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="toDo" id="editToDo" ${paquet.toDo ? 'checked' : ''}>
 						<label class="form-check-label" for="editToDo">A faire :</label>
@@ -133,30 +115,24 @@ export function afficherCardPaquetEditModal(paquet) {
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
 
-	// Ajout du sélecteur de corpus à la place de l'input Corpus ID
-
+	// Ajout des sélecteurs dynamiques (corpus, type doc, statut)
 	(async () => {
-		// Corpus
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
-			   const corpusSelector = selectCorpus(undefined, paquet.corpusId);
-			   corpusContainer.appendChild(corpusSelector);
+			const corpusSelector = selectCorpus(undefined, paquet.corpusId);
+			corpusContainer.appendChild(corpusSelector);
 		}
-		// Type de document
 		const typeDocContainer = form.querySelector('#type-document-select-container');
 		if (typeDocContainer) {
 			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId', value: paquet.typeDocumentId || paquet.typeDocument_id || '' });
 			typeDocContainer.appendChild(typeDocSelectorWrapper);
 		}
-		// Statut
 		const statusContainer = form.querySelector('#status-select-container');
 		if (statusContainer) {
 			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId', value: paquet.statusId || paquet.status_id || '' });
 			statusContainer.appendChild(statusSelectorWrapper);
 		}
 	})();
-
-	// Ajout du submit (à compléter avec l'appel API si besoin)
 
 	form.addEventListener('submit', async function(e) {
 		e.preventDefault();
@@ -168,14 +144,33 @@ export function afficherCardPaquetEditModal(paquet) {
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
 		// CorpusId
 		const selectCorpusEl = form.querySelector('#corpus-select-container select');
-		if (selectCorpusEl) data.corpusId = selectCorpusEl.value;
+		if (selectCorpusEl && selectCorpusEl.value) {
+			data.corpusId = selectCorpusEl.value;
+		} else {
+			delete data.corpusId;
+		}
 		// TypeDocumentId
 		const selectTypeDocEl = form.querySelector('#type-document-select-container select');
-		if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
+		if (selectTypeDocEl && selectTypeDocEl.value) {
+			data.typeDocumentId = selectTypeDocEl.value;
+		} else {
+			delete data.typeDocumentId;
+		}
 		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
-		if (selectStatusEl) data.statusId = selectStatusEl.value;
-		// Commentaire : ne rien faire, le champ s'appelle déjà 'comment' dans le formData
+		if (selectStatusEl && selectStatusEl.value) {
+			data.statusId = selectStatusEl.value;
+		} else {
+			delete data.statusId;
+		}
+		// Commentaire
+		data.commentaire = data.comment;
+		delete data.comment;
+		// Vérification des champs obligatoires
+		if (!data.folderName || !data.cote) {
+			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
+			return;
+		}
 		let res = null;
 		try {
 			res = await editPaquet(data);
@@ -187,10 +182,10 @@ export function afficherCardPaquetEditModal(paquet) {
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été modifié.', true);
 			if (window.$ && window.$.fn && window.$.fn.DataTable) {
-			  const oldTable = window.$('#tableau-paquet');
-			  if (oldTable.length && oldTable.hasClass('dataTable')) {
-			    oldTable.DataTable().destroy();
-			  }
+				const oldTable = window.$('#tableau-paquet');
+				if (oldTable.length && oldTable.hasClass('dataTable')) {
+					oldTable.DataTable().destroy();
+				}
 			}
 			afficherTableauPaquet('tableau-paquet-conteneur');
 		} else if (res && res.fields) {
@@ -202,29 +197,24 @@ export function afficherCardPaquetEditModal(paquet) {
 		}
 	});
 
-	// Fonction utilitaire pour afficher une popup
+	// Fonction utilitaire pour afficher une popup Bootstrap
 	function showPopup(message, success = true) {
 		const popup = document.createElement('div');
-		popup.textContent = message;
-		popup.style.position = 'fixed';
-		popup.style.top = '30px';
-		popup.style.left = '50%';
-		popup.style.transform = 'translateX(-50%)';
-		popup.style.background = success ? '#28a745' : '#dc3545';
-		popup.style.color = '#fff';
-		popup.style.padding = '16px 32px';
-		popup.style.borderRadius = '8px';
-		popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+		popup.className = `alert ${success ? 'alert-success' : 'alert-danger'} position-fixed top-0 start-50 translate-middle-x mt-3 shadow`;
 		popup.style.zIndex = 3000;
-		popup.style.fontSize = '1.1rem';
+		popup.style.minWidth = '300px';
+		popup.style.maxWidth = '90vw';
+		popup.textContent = message;
 		document.body.appendChild(popup);
 		setTimeout(() => {
 			popup.remove();
 		}, 2500);
 	}
 
-	modal.appendChild(closeBtn);
-	modal.appendChild(form);
+	modalContent.appendChild(modalHeader);
+	modalContent.appendChild(form);
+	// modalContent.appendChild(modalFooter);
+	modal.appendChild(modalContent);
 	overlay.appendChild(modal);
 
 	overlay.addEventListener('click', e => {
