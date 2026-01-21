@@ -2,49 +2,59 @@ import { fetchAllCorpus } from '../../API/corpus.js';
 
 let selectedCorpus = null;
 
-export function selectCorpus(onSelect) {
 
+export function selectCorpus(onSelect, defaultValue) {
 	const container = document.createElement('div');
-
 	const select = document.createElement('select');
 	select.className = 'select-small';
 	select.id = 'corpus-select';
 
-		fetchAllCorpus().then(corpusList => {
-			if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
-				const allOption = document.createElement('option');
-				allOption.value = 'ALL';
-				allOption.textContent = 'TOUS';
-				allOption.dataset.corpus = '';
-				allOption.selected = true;
-				select.appendChild(allOption);
+	fetchAllCorpus().then(corpusList => {
+		if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
+			const allOption = document.createElement('option');
+			allOption.value = 'ALL';
+			allOption.textContent = 'TOUS';
+			allOption.dataset.corpus = '';
+			allOption.selected = true;
+			select.appendChild(allOption);
 
-				corpusList.data.forEach(corpus => {
-					const option = document.createElement('option');
-					option.value = corpus.idcorpus;
-					option.innerHTML = corpus.desciption_corpus
-					  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
-					  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
-					option.textContent = corpus.name_corpus; 
-					option.dataset.corpus = JSON.stringify({
-						id: corpus.idcorpus,
-						nom: corpus.name_corpus,
-						description: corpus.desciption_corpus
-					});
-					select.appendChild(option);
+			corpusList.data.forEach(corpus => {
+				const option = document.createElement('option');
+				option.value = corpus.idcorpus;
+				option.innerHTML = corpus.desciption_corpus
+				  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
+				  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
+				option.textContent = corpus.name_corpus; 
+				option.dataset.corpus = JSON.stringify({
+					id: corpus.idcorpus,
+					nom: corpus.name_corpus,
+					description: corpus.desciption_corpus
 				});
-				setTimeout(() => {
+				select.appendChild(option);
+			});
+
+			setTimeout(() => {
+				// Sélectionner la valeur par défaut si fournie
+				if (defaultValue) {
+					select.value = defaultValue;
 					if (window.$ && window.$.fn && window.$.fn.select2) {
-						window.$(select).select2({
-							width: 'resolve',
-							templateResult: formatCorpusOption,
-							templateSelection: formatCorpusSelection,
-							dropdownParent: window.$(container)
-						});
+						window.$(select).val(defaultValue).trigger('change');
+					} else {
+						// Déclencher manuellement l'événement change si pas de select2
+						select.dispatchEvent(new Event('change'));
 					}
-				}, 0);
-			}
-		});
+				}
+				if (window.$ && window.$.fn && window.$.fn.select2) {
+					window.$(select).select2({
+						width: 'resolve',
+						templateResult: formatCorpusOption,
+						templateSelection: formatCorpusSelection,
+						dropdownParent: window.$(container)
+					});
+				}
+			}, 0);
+		}
+	});
 
 	select.addEventListener('change', (e) => {
 		const selectedOption = select.options[select.selectedIndex];

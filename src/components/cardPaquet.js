@@ -125,17 +125,48 @@ export function createCardPaquet(paquet) {
 			afficherCardPaquetEditModal(paquet);
 		});
 	}
-
-	// Ajout du listener pour le bouton Supprimer (à adapter selon la logique de suppression)
-	const deleteBtn = card.querySelector('#btn-delete-paquet');
-	if (deleteBtn) {
-		deleteBtn.addEventListener('click', () => {
-			if (confirm('Voulez-vous vraiment supprimer ce paquet ?')) {
-				const overlay = document.getElementById('paquet-modal-overlay');
-				if (overlay) overlay.remove();
-			}
-		});
+	// Affiche un popup 
+	function showPopup(message, isSuccess = true) {
+	    const popup = document.createElement('div');
+	    popup.textContent = message;
+	    popup.style.position = 'fixed';
+	    popup.style.top = '32px';
+	    popup.style.left = '50%';
+	    popup.style.transform = 'translateX(-50%)';
+	    popup.style.background = isSuccess ? '#28a745' : '#dc3545';
+	    popup.style.color = '#fff';
+	    popup.style.padding = '16px 32px';
+	    popup.style.borderRadius = '8px';
+	    popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+	    popup.style.fontSize = '1.1rem';
+	    popup.style.zIndex = 3000;
+	    popup.style.opacity = '0';
+	    popup.style.transition = 'opacity 0.3s';
+	    document.body.appendChild(popup);
+	    setTimeout(() => { popup.style.opacity = '1'; }, 10);
+	    setTimeout(() => {
+	        popup.style.opacity = '0';
+	        setTimeout(() => popup.remove(), 300);
+	    }, 2200);
 	}
+
+		       const deleteBtn = card.querySelector('#btn-delete-paquet');
+		       if (deleteBtn) {
+			       deleteBtn.addEventListener('click', async () => {
+				       if (confirm('Voulez-vous vraiment supprimer ce paquet ?')) {
+					       const overlay = document.getElementById('paquet-modal-overlay');
+					       if (overlay) overlay.remove();
+					       const { deletePaquet } = await import('../API/paquet.js');
+					       const result = await deletePaquet(paquet.cote);
+					       if (result && result.success) {
+						       showPopup('Paquet supprimé avec succès.', true);
+						       setTimeout(() => window.location.reload(), 1200);
+					       } else {
+						       showPopup('Erreur lors de la suppression du paquet.', false);
+					       }
+				       }
+			       });
+		       }
 
 	return card;
 }

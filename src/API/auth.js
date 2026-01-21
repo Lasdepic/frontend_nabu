@@ -1,7 +1,8 @@
+import API_URL from './config.js';
 // Récupère l'id utilisateur connecté et le stocke dans le localStorage
 export async function storeConnectedUserId() {
 	try {
-		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' });
+		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=check-auth`, { credentials: 'include' });
 		const data = await response.json();
 		if (data && data.authenticated && data.user && data.user.id) {
 			localStorage.setItem('userId', data.user.id);
@@ -15,7 +16,7 @@ export async function storeConnectedUserId() {
 // Vérifie l'authentification via une requête à l'API
 export async function isAuthenticated() {
 	try {
-		const response = await fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', { credentials: 'include' });
+		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=check-auth`, { credentials: 'include' });
 		if (!response.ok) return false;
 		const data = await response.json();
 		return data && data.authenticated === true;
@@ -26,7 +27,7 @@ export async function isAuthenticated() {
 // API Login
 export async function login (email, password){
     try {
-        const res = await fetch('http://localhost/stage/backend_nabu/index.php?action=login', {
+		const res = await fetch(`${API_URL}stage/backend_nabu/index.php?action=login`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             credentials: "include",
@@ -47,7 +48,7 @@ export async function login (email, password){
 // API Déconnexion
 export async function logout() {
 	try {
-		const res = await fetch('http://localhost/stage/backend_nabu/index.php?action=logout', {
+		const res = await fetch(`${API_URL}stage/backend_nabu/index.php?action=logout`, {
 			method: "GET",
 			credentials: "include",
 		});
@@ -64,7 +65,7 @@ export async function logout() {
 // Register
 export async function register(userData) {
 	try {
-		const res = await fetch('http://localhost/stage/backend_nabu/index.php?action=register', {
+		const res = await fetch(`${API_URL}stage/backend_nabu/index.php?action=register`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			credentials: "include",
