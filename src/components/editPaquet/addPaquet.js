@@ -9,72 +9,54 @@ export function afficherCardPaquetAddModal() {
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
-	// Overlay
+	// Overlay Bootstrap style
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
+	overlay.className = 'modal fade show';
+	overlay.style.display = 'block';
+	overlay.style.background = 'rgba(0,0,0,0.5)';
 	overlay.style.position = 'fixed';
 	overlay.style.top = 0;
 	overlay.style.left = 0;
 	overlay.style.width = '100vw';
 	overlay.style.height = '100vh';
-	overlay.style.background = 'rgba(0,0,0,0.5)';
-	overlay.style.display = 'flex';
-	overlay.style.alignItems = 'center';
-	overlay.style.justifyContent = 'center';
 	overlay.style.zIndex = 2000;
 
-	// Modale
+	// Modal dialog
 	const modal = document.createElement('div');
-	modal.style.position = 'relative';
-	modal.style.background = '#fff';
-	modal.style.borderRadius = '10px';
-	modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.25)';
-	modal.style.padding = '24px 16px 16px 16px';
-	modal.style.maxWidth = '650px';
+	modal.className = 'modal-dialog modal-dialog-centered';
+	modal.style.maxWidth = '700px';
 	modal.style.width = '100%';
-	modal.style.maxHeight = '90vh';
-	modal.style.overflowY = 'auto';
 
-	// Bouton de fermeture
+	// Modal content
+	const modalContent = document.createElement('div');
+	modalContent.className = 'modal-content shadow-lg';
+
+	// Modal header
+	const modalHeader = document.createElement('div');
+	modalHeader.className = 'modal-header';
+	const title = document.createElement('h5');
+	title.className = 'modal-title fw-bold';
+	title.textContent = 'Création d’un paquet';
+
 	const closeBtn = document.createElement('button');
-	closeBtn.innerHTML = 'X';
+	closeBtn.type = 'button';
+	closeBtn.className = 'btn-close';
 	closeBtn.setAttribute('aria-label', 'Fermer');
-	closeBtn.style.position = 'absolute';
-	closeBtn.style.top = '8px';
-	closeBtn.style.right = '16px';
-	closeBtn.style.left = 'auto';
-	closeBtn.style.transform = 'none';
-	closeBtn.style.width = '44px';
-	closeBtn.style.height = '44px';
-	closeBtn.style.display = 'flex';
-	closeBtn.style.alignItems = 'center';
-	closeBtn.style.justifyContent = 'center';
-	closeBtn.style.fontSize = '1.5rem';
-	closeBtn.style.background = '#dc3545';
-	closeBtn.style.border = 'none';
-	closeBtn.style.borderRadius = '50%';
-	closeBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-	closeBtn.style.cursor = 'pointer';
-	closeBtn.style.color = '#fff';
-	closeBtn.style.zIndex = 10;
-	closeBtn.style.transition = 'background 0.2s, color 0.2s';
-	closeBtn.addEventListener('mouseenter', () => {
-		closeBtn.style.background = '#bb2d3b';
-	});
-	closeBtn.addEventListener('mouseleave', () => {
-		closeBtn.style.background = '#dc3545';
-	});
 	closeBtn.addEventListener('click', () => overlay.remove());
 
-	// Formulaire de création
+	modalHeader.appendChild(title);
+	modalHeader.appendChild(closeBtn);
+
+	// Modal body (form)
 	const form = document.createElement('form');
+	form.className = 'modal-body';
 	const connectedUserId = localStorage.getItem('userId') || '';
 	form.innerHTML = `
-		<div class="fw-bold fs-3 text-center mb-4">Création d’un paquet</div>
 		<div class="container-fluid">
 			<div class="row g-3">
 				<div class="col-md-6">
-					<label class="form-label">Nom dossier <span style="color:red">*</span> :</label>
+					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
 					<input type="text" class="form-control" name="folderName" required>
 				</div>
 				<div class="col-md-6">
@@ -82,7 +64,7 @@ export function afficherCardPaquetAddModal() {
 					<input type="text" class="form-control" name="microFilmImage">
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">Cote <span style="color:red">*</span> :</label>
+					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
 					<input type="text" class="form-control" name="cote" required>
 				</div>
 				<div class="col-md-6">
@@ -105,7 +87,7 @@ export function afficherCardPaquetAddModal() {
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving">
 				</div>
-				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center">
+				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="toDo" id="addToDo">
 						<label class="form-check-label" for="addToDo">A faire :</label>
@@ -131,6 +113,23 @@ export function afficherCardPaquetAddModal() {
 		<input type="hidden" name="usersId" value="${connectedUserId}">
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
+
+	// Modal footer (empty, but could be used)
+	// const modalFooter = document.createElement('div');
+	// modalFooter.className = 'modal-footer';
+
+	// Assemble modal
+	modalContent.appendChild(modalHeader);
+	modalContent.appendChild(form);
+	// modalContent.appendChild(modalFooter);
+	modal.appendChild(modalContent);
+	overlay.appendChild(modal);
+
+	overlay.addEventListener('click', e => {
+		if (e.target === overlay) overlay.remove();
+	});
+
+	document.body.appendChild(overlay);
 
 	(async () => {
 		const corpusContainer = form.querySelector('#corpus-select-container');
@@ -160,21 +159,33 @@ export function afficherCardPaquetAddModal() {
 		data.toDo = !!form.querySelector('[name="toDo"]').checked;
 		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
-	// CorpusId
-	const selectCorpusEl = form.querySelector('#corpus-select-container select');
-	if (selectCorpusEl) data.corpusId = selectCorpusEl.value;
-	// TypeDocumentId
-	const selectTypeDocEl = form.querySelector('#type-document-select-container select');
-	if (selectTypeDocEl) data.typeDocumentId = selectTypeDocEl.value;
-	// StatusId
-	const selectStatusEl = form.querySelector('#status-select-container select');
-	if (selectStatusEl) data.statusId = selectStatusEl.value;
-	// Commentaire
-	data.commentaire = data.comment;
-	delete data.comment;
+		// CorpusId
+		const selectCorpusEl = form.querySelector('#corpus-select-container select');
+		if (selectCorpusEl && selectCorpusEl.value) {
+			data.corpusId = selectCorpusEl.value;
+		} else {
+			delete data.corpusId;
+		}
+		// TypeDocumentId
+		const selectTypeDocEl = form.querySelector('#type-document-select-container select');
+		if (selectTypeDocEl && selectTypeDocEl.value) {
+			data.typeDocumentId = selectTypeDocEl.value;
+		} else {
+			delete data.typeDocumentId;
+		}
+		// StatusId
+		const selectStatusEl = form.querySelector('#status-select-container select');
+		if (selectStatusEl && selectStatusEl.value) {
+			data.statusId = selectStatusEl.value;
+		} else {
+			delete data.statusId;
+		}
+		// Commentaire
+		data.commentaire = data.comment;
+		delete data.comment;
 		// Vérification des champs obligatoires
-		if (!data.folderName || !data.cote || !data.usersId || isNaN(Number(data.usersId))) {
-			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier, Cote, utilisateur connecté).', false);
+		if (!data.folderName || !data.cote) {
+			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;
 		}
 		// Appel API
@@ -184,6 +195,9 @@ export function afficherCardPaquetAddModal() {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
+			if (window.afficherTableauPaquet) {
+				window.afficherTableauPaquet('tableau-paquet-conteneur');
+			}
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {
@@ -193,34 +207,17 @@ export function afficherCardPaquetAddModal() {
 		}
 	});
 
-	// Fonction pour afficher une popup
+	// Fonction pour afficher une popup Bootstrap
 	function showPopup(message, success = true) {
 		const popup = document.createElement('div');
-		popup.textContent = message;
-		popup.style.position = 'fixed';
-		popup.style.top = '30px';
-		popup.style.left = '50%';
-		popup.style.transform = 'translateX(-50%)';
-		popup.style.background = success ? '#28a745' : '#dc3545';
-		popup.style.color = '#fff';
-		popup.style.padding = '16px 32px';
-		popup.style.borderRadius = '8px';
-		popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+		popup.className = `alert ${success ? 'alert-success' : 'alert-danger'} position-fixed top-0 start-50 translate-middle-x mt-3 shadow`;
 		popup.style.zIndex = 3000;
-		popup.style.fontSize = '1.1rem';
+		popup.style.minWidth = '300px';
+		popup.style.maxWidth = '90vw';
+		popup.textContent = message;
 		document.body.appendChild(popup);
 		setTimeout(() => {
 			popup.remove();
 		}, 2500);
 	}
-
-	modal.appendChild(closeBtn);
-	modal.appendChild(form);
-	overlay.appendChild(modal);
-
-	overlay.addEventListener('click', e => {
-		if (e.target === overlay) overlay.remove();
-	});
-
-	document.body.appendChild(overlay);
 }

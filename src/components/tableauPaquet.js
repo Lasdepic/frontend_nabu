@@ -5,6 +5,33 @@ import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
 
+
+// Promesse globale pour charger DataTables une seule fois
+let dataTablesLoader = null;
+
+function loadDataTablesOnce() {
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+        return Promise.resolve();
+    }
+    if (!dataTablesLoader) {
+        dataTablesLoader = new Promise((resolve) => {
+            // Charger CSS
+            if (!document.querySelector('link[href*="jquery.dataTables.min.css"]')) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css';
+                document.head.appendChild(link);
+            }
+            // Charger JS
+            const script = document.createElement('script');
+            script.src = 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js';
+            script.onload = () => resolve();
+            document.body.appendChild(script);
+        });
+    }
+    return dataTablesLoader;
+}
+
 export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
     let conteneur = document.getElementById(conteneurId);
     if (!conteneur) {
@@ -20,7 +47,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             oldTable.DataTable().destroy();
         }
     }
-
 
     if (!document.getElementById('tableau-paquet-bottom-border-style')) {
         const style = document.createElement('style');
@@ -59,6 +85,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                         <th class="text-center" scope="col" style="max-width:150px; width:150px;">Déposé en SIP</th>
                         <th class="text-center" scope="col" style="max-width:120px; width:120px;">Envoyé</th>
                         <th class="text-center" scope="col" style="max-width:120px; width:120px;">À faire</th>
+                        <th class="d-none">DateTri</th>
                     </tr>
                 </thead>
             <tbody></tbody>
@@ -112,8 +139,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         if (filterCorpusId) {
             filteredPaquets = filteredPaquets.filter(p => String(p.corpusId) === String(filterCorpusId));
         }
-        // ...
-        // Tri par date
+        // Tri par date (pour affichage initial, mais DataTables gérera le tri ensuite)
         filteredPaquets = filteredPaquets.slice().sort((a, b) => {
             const dateA = new Date(a.lastmodifDate || a.date || '');
             const dateB = new Date(b.lastmodifDate || b.date || '');
@@ -123,21 +149,26 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
         const tbody = conteneur.querySelector('tbody');
-        tbody.innerHTML = filteredPaquets.map((p, idx) => `
+        tbody.innerHTML = filteredPaquets.map((p, idx) => {
+            // Colonne cachée pour la date de tri (format ISO pour tri correct)
+            const dateTri = (p.lastmodifDate || p.date || '') ? new Date(p.lastmodifDate || p.date).toISOString() : '';
+            return `
             <tr data-paquet-idx="${idx}" style="cursor:pointer;">
                 <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
                 <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
                 <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
                 <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
-                <td class="text-center" style="max-width:150px; width:150px;">${p.deposeSIP ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
+                <td class="text-center" style="max-width:150px; width:150px;">${p.filedSip ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
                 <td class="text-center" style="max-width:120px; width:120px;">
                     <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
                 </td>
                 <td class="text-center" style="max-width:120px; width:120px;">
                     <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
                 </td>
+                <td class="d-none">${dateTri}</td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
         Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
             tr.addEventListener('click', function() {
                 const idx = this.getAttribute('data-paquet-idx');
@@ -182,30 +213,23 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             }
         }
     }
-    if (!window.jQuery || !window.jQuery.fn.DataTable) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css';
-        document.head.appendChild(link);
-        const script = document.createElement('script');
-        script.src = 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js';
-        script.onload = () => {
-            $('#tableau-paquet').DataTable({
-                lengthMenu: [[25, 50, 75, 100, -1], [25, 50, 75, 100, "Tous"]],
-                language: {
-                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
-                }
-            });
-            setTimeout(addPaquet, 100); 
-        };
-        document.body.appendChild(script);
-    } else {
-        $('#tableau-paquet').DataTable({
-            lengthMenu: [[25, 50, 75, 100, -1], [25, 50, 75, 100, "Tous"]],
-            language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
-            }
-        });
-        setTimeout(addPaquet, 100);
+
+    // Attendre que DataTables soit chargé avant d'initialiser
+    await loadDataTablesOnce();
+    // Protéger contre double init
+    if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
+        $('#tableau-paquet').DataTable().destroy();
     }
+    // Tri par la colonne cachée (8ème colonne, index 7) en décroissant
+    $('#tableau-paquet').DataTable({
+        lengthMenu: [[25, 50, 75, 100, -1], [25, 50, 75, 100, "Tous"]],
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+        },
+        order: [[7, 'desc']],
+        columnDefs: [
+            { targets: 7, visible: false, searchable: false }
+        ]
+    });
+    setTimeout(addPaquet, 100);
 }
