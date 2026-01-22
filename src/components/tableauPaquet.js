@@ -58,6 +58,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet th, #tableau-paquet td {
                 border: none;
                 border-bottom: 1px solid #343A40;
+                text-align: center !important;
+                vertical-align: middle !important;
             }
             #tableau-paquet thead th {
                 border-bottom: 2px solid #343A40;
@@ -149,26 +151,28 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         });
         const tbody = conteneur.querySelector('tbody');
-        tbody.innerHTML = filteredPaquets.map((p, idx) => {
-            // Colonne cachée pour la date de tri (format ISO pour tri correct)
-            const dateTri = (p.lastmodifDate || p.date || '') ? new Date(p.lastmodifDate || p.date).toISOString() : '';
-            return `
-            <tr data-paquet-idx="${idx}" style="cursor:pointer;">
-                <td class="text-truncate text-center" style="max-width:150px; width:150px;">${p.folderName || ''}</td>
-                <td class="text-truncate text-center" style="max-width:120px; width:120px;">${p.cote || ''}</td>
-                <td class="text-truncate text-center" style="max-width:150px; width:150px;">${corpusDict[p.corpusId] || ''}</td>
-                <td class="text-truncate text-center" style="max-width:200px; width:200px;">${p.commentaire || ''}</td>
-                <td class="text-center" style="max-width:150px; width:150px;">${p.filedSip ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
-                <td class="text-center" style="max-width:120px; width:120px;">
-                    <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
-                </td>
-                <td class="text-center" style="max-width:120px; width:120px;">
-                    <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
-                </td>
-                <td class="d-none">${dateTri}</td>
-            </tr>
-            `;
-        }).join('');
+            tbody.innerHTML = filteredPaquets.map((p, idx) => {
+                // Colonne cachée pour la date de tri (format ISO pour tri correct)
+                const dateTri = (p.lastmodifDate || p.date || '') ? new Date(p.lastmodifDate || p.date).toISOString() : '';
+                // pour afficher -
+                const showValue = v => (v === undefined || v === null || v === '' ? '-' : v);
+                return `
+                <tr data-paquet-idx="${idx}" style="cursor:pointer;">
+                    <td class="text-truncate text-center" style="max-width:150px; width:150px;">${showValue(p.folderName)}</td>
+                    <td class="text-truncate text-center" style="max-width:120px; width:120px;">${showValue(p.cote)}</td>
+                    <td class="text-truncate text-center" style="max-width:150px; width:150px;">${showValue(corpusDict[p.corpusId])}</td>
+                    <td class="text-truncate text-center" style="max-width:200px; width:200px;">${showValue(p.commentaire)}</td>
+                    <td class="text-center" style="max-width:150px; width:150px;">${p.filedSip ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>'}</td>
+                    <td class="text-center" style="max-width:120px; width:120px;">
+                        <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
+                    </td>
+                    <td class="text-center" style="max-width:120px; width:120px;">
+                        <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
+                    </td>
+                    <td class="d-none">${dateTri}</td>
+                </tr>
+                `;
+            }).join('');
         Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
             tr.addEventListener('click', function() {
                 const idx = this.getAttribute('data-paquet-idx');

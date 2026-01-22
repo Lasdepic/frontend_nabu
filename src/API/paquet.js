@@ -3,7 +3,7 @@ import API_URL from './config.js';
 // API pour récupéré tous les paquets
 export async function fetchAllPaquets() {
     	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=display-paquets`);
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=display-paquets`);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {
@@ -14,7 +14,7 @@ export async function fetchAllPaquets() {
 // API pour récupéré un paquet
 export async function fetchOnePaquet() {
     	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=display-paquet`);
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=display-paquet`);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {
@@ -27,7 +27,7 @@ export async function fetchOnePaquet() {
 // Créer un paquet
 export async function createPaquet(paquetData) {
 	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=create-paquet`, {
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=create-paquet`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -43,7 +43,7 @@ export async function createPaquet(paquetData) {
 // Modifier un paquet
 export async function editPaquet(paquetData) {
 	try {
-		   const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=edit-paquet`, {
+		   const response = await fetch(`${API_URL}/backend_nabu/index.php?action=edit-paquet`, {
 			   method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ export async function editPaquet(paquetData) {
 // Supprimer un paquet
 export async function deletePaquet(cote) {
 	try {
-		const url = `${API_URL}stage/backend_nabu/index.php?action=delete-paquet&cote=${encodeURIComponent(cote)}`;
+		const url = `${API_URL}/backend_nabu/index.php?action=delete-paquet&cote=${encodeURIComponent(cote)}`;
 		const response = await fetch(url, {
 			method: 'DELETE',
 		});

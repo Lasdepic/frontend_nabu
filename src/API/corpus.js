@@ -3,7 +3,7 @@ import API_URL from './config.js';
 // API pour récupéré tous les Corpus
 export async function fetchAllCorpus() {
     	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=display-corpus-all`);
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=display-corpus-all`);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {
@@ -15,7 +15,7 @@ export async function fetchAllCorpus() {
 // API pour récupéré un Corpus
 export async function fetchOneCorpus() {
     	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=get-corpus`);
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=get-corpus`);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {
@@ -29,7 +29,7 @@ export async function fetchOneCorpus() {
 // Créer un corpus
 export async function createCorpus(data) {
 	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=create-corpus`, {
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=create-corpus`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export async function createCorpus(data) {
 // Modifier un corpus
 export async function editCorpus(id, data) {
 	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=edit-corpus&id=${id}`, {
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=edit-corpus&id=${id}`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export async function editCorpus(id, data) {
 // Supprimer un corpus
 export async function deleteCorpus(id) {
 	try {
-		const response = await fetch(`${API_URL}stage/backend_nabu/index.php?action=delete-corpus&id=${id}`, {
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=delete-corpus&id=${id}`, {
 			method: 'DELETE',
 		});
 		return await response.json();

@@ -3,67 +3,49 @@ export function afficherCardPaquetModal(paquet) {
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
-	// Overlay
+	// Overlay Bootstrap
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
-	overlay.style.position = 'fixed';
-	overlay.style.top = 0;
-	overlay.style.left = 0;
-	overlay.style.width = '100vw';
-	overlay.style.height = '100vh';
+	overlay.className = 'modal fade show';
+	overlay.tabIndex = -1;
+	overlay.style.display = 'block';
 	overlay.style.background = 'rgba(0,0,0,0.5)';
-	overlay.style.display = 'flex';
-	overlay.style.alignItems = 'center';
-	overlay.style.justifyContent = 'center';
 	overlay.style.zIndex = 2000;
 
-	// Modale
-	const modal = document.createElement('div');
-	modal.style.position = 'relative';
-	modal.style.background = '#fff';
-	modal.style.borderRadius = '10px';
-	modal.style.boxShadow = '0 4px 32px rgba(0,0,0,0.25)';
-	modal.style.padding = '24px 16px 16px 16px';
-	modal.style.maxWidth = '650px';
-	modal.style.width = '100%';
-	modal.style.maxHeight = '90vh';
-	modal.style.overflowY = 'auto';
+	// Modale Bootstrap
+	const modalDialog = document.createElement('div');
+	modalDialog.className = 'modal-dialog modal-lg modal-dialog-centered';
 
-	// Bouton de fermeture
+	const modalContent = document.createElement('div');
+	modalContent.className = 'modal-content';
+
+	// Header
+	const modalHeader = document.createElement('div');
+	modalHeader.className = 'modal-header';
+
+	const modalTitle = document.createElement('h5');
+	modalTitle.className = 'modal-title fw-bold text-center w-100';
+	modalTitle.textContent = 'Information du paquet';
+
 	const closeBtn = document.createElement('button');
-	closeBtn.innerHTML = 'X';
+	closeBtn.type = 'button';
+	closeBtn.className = 'btn-close';
 	closeBtn.setAttribute('aria-label', 'Fermer');
-	closeBtn.style.position = 'absolute';
-	closeBtn.style.top = '8px';
-	closeBtn.style.right = '16px';
-	closeBtn.style.left = 'auto';
-	closeBtn.style.transform = 'none';
-	closeBtn.style.width = '44px';
-	closeBtn.style.height = '44px';
-	closeBtn.style.display = 'flex';
-	closeBtn.style.alignItems = 'center';
-	closeBtn.style.justifyContent = 'center';
-	closeBtn.style.fontSize = '1.5rem';
-	closeBtn.style.background = '#dc3545'; 
-	closeBtn.style.border = 'none';
-	closeBtn.style.borderRadius = '50%';
-	closeBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-	closeBtn.style.cursor = 'pointer';
-	closeBtn.style.color = '#fff';
-	closeBtn.style.zIndex = 10;
-	closeBtn.style.transition = 'background 0.2s, color 0.2s';
-	closeBtn.addEventListener('mouseenter', () => {
-		closeBtn.style.background = '#bb2d3b';
-	});
-	closeBtn.addEventListener('mouseleave', () => {
-		closeBtn.style.background = '#dc3545';
-	});
 	closeBtn.addEventListener('click', () => overlay.remove());
 
-	
-	modal.appendChild(closeBtn);
-	modal.appendChild(createCardPaquet(paquet));
-	overlay.appendChild(modal);
+	modalHeader.appendChild(modalTitle);
+	modalHeader.appendChild(closeBtn);
+
+	// Body
+	const modalBody = document.createElement('div');
+	modalBody.className = 'modal-body';
+	modalBody.appendChild(createCardPaquet(paquet));
+
+	modalContent.appendChild(modalHeader);
+	modalContent.appendChild(modalBody);
+
+	modalDialog.appendChild(modalContent);
+	overlay.appendChild(modalDialog);
 
 	overlay.addEventListener('click', e => {
 		if (e.target === overlay) overlay.remove();
@@ -77,41 +59,51 @@ import { selectCorpus } from './selecteur/selectCorpus.js';
 
 export function createCardPaquet(paquet) {
 	const card = document.createElement('div');
-	card.style.background = '#fff';
-	card.style.borderRadius = '12px';
-	card.style.boxShadow = '0 4px 32px rgba(0,0,0,0.15)';
-	card.style.padding = '32px 32px 24px 32px';
-	card.style.maxWidth = '650px';
-	card.style.margin = '0 auto';
-	card.style.fontFamily = 'inherit';
-	card.style.color = '#111';
-	card.style.position = 'relative';
+	card.className = 'card shadow-sm border-0';
 
 	card.innerHTML = `
-		<div style="font-weight: bold; font-size: 1.25rem; text-align: center; margin-bottom: 18px;">Information du paquet</div>
-		<div style="margin-bottom: 18px;">
-			<span style="font-weight: bold;">Nom dossier :</span> ${paquet.folderName || ''}
-		</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Cote :</span> ${paquet.cote || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Corpus :</span> ${paquet.corpus || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Répertoire des images microfilms :</span> ${paquet.microFilmImage || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Répertoire des images couleurs :</span> ${paquet.imageColor || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Recherche Archivage :</span> ${paquet.searchArchiving || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Status :</span> ${paquet.name_status || ''}</div>
-		<div style="margin-bottom: 8px;"><span style="font-weight: bold;">Date de la dernière modification :</span> ${paquet.lastmodifDate || ''}</div>
+		<div class="card-body">
+			<ul class="list-group list-group-flush mb-3">
+				<li class="list-group-item"><strong>Nom dossier :</strong> ${paquet.folderName || ''}</li>
+				<li class="list-group-item"><strong>Cote :</strong> ${paquet.cote || ''}</li>
+				<li class="list-group-item"><strong>Corpus :</strong> ${paquet.corpus || ''}</li>
+				<li class="list-group-item"><strong>Répertoire des images microfilms :</strong> ${paquet.microFilmImage || ''}</li>
+				<li class="list-group-item"><strong>Répertoire des images couleurs :</strong> ${paquet.imageColor || ''}</li>
+				<li class="list-group-item"><strong>Recherche Archivage :</strong> ${paquet.searchArchiving || ''}</li>
+				<li class="list-group-item"><strong>Status :</strong> ${paquet.name_status || ''}</li>
+				<li class="list-group-item"><strong>Date de la dernière modification :</strong> ${paquet.lastmodifDate || ''}</li>
+			</ul>
 
-		<div style="display: flex; align-items: center; gap: 24px; margin: 18px 0 8px 0;">
-			<span>A faire : <input type="checkbox" disabled ${paquet.toDo ? 'checked' : ''} style="width: 18px; height: 18px; vertical-align: middle;"></span>
-			<span>Multi volume : <input type="checkbox" disabled ${paquet.facileTest ? 'checked' : ''} style="width: 18px; height: 18px; vertical-align: middle;"></span>
-			<span>Déposé dans SIP en prod num : <input type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''} style="width: 18px; height: 18px; vertical-align: middle;"></span>
-		</div>
+			<div class="row mb-3">
+				<div class="col">
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" disabled ${paquet.toDo ? 'checked' : ''} id="todoCheck">
+						<label class="form-check-label" for="todoCheck">A faire</label>
+					</div>
+				</div>
+				<div class="col">
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" disabled ${paquet.facileTest ? 'checked' : ''} id="multiVolumeCheck">
+						<label class="form-check-label" for="multiVolumeCheck">Multi volume</label>
+					</div>
+				</div>
+				<div class="col">
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''} id="sipCheck">
+						<label class="form-check-label" for="sipCheck">Déposé dans SIP en prod num</label>
+					</div>
+				</div>
+			</div>
 
-		<div style="margin-top: 18px; font-weight: bold;">Commentaire :</div>
-		<div style="margin-bottom: 24px; white-space: pre-line;">${paquet.commentaire || ''}</div>
+			<div class="mb-3">
+				<strong>Commentaire :</strong>
+				<div class="border rounded p-2 bg-light" style="white-space: pre-line;">${paquet.commentaire || ''}</div>
+			</div>
 
-		<div style="display: flex; justify-content: center; gap: 32px; margin-top: 32px;">
-			<button type="button" id="btn-edit-paquet" style="background: #007bff; color: #fff; border: none; border-radius: 8px; padding: 8px 20px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: background 0.2s;">Modifier</button>
-			<button type="button" id="btn-delete-paquet" style="background: #dc3545; color: #fff; border: none; border-radius: 8px; padding: 8px 20px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: background 0.2s;">Supprimer</button>
+			<div class="d-flex justify-content-center gap-3 mt-4">
+				<button type="button" id="btn-edit-paquet" class="btn btn-primary px-4">Modifier</button>
+				<button type="button" id="btn-delete-paquet" class="btn btn-danger px-4">Supprimer</button>
+			</div>
 		</div>
 	`;
 
@@ -125,48 +117,117 @@ export function createCardPaquet(paquet) {
 			afficherCardPaquetEditModal(paquet);
 		});
 	}
-	// Affiche un popup 
+
+	// Affiche un toast Bootstrap
 	function showPopup(message, isSuccess = true) {
-	    const popup = document.createElement('div');
-	    popup.textContent = message;
-	    popup.style.position = 'fixed';
-	    popup.style.top = '32px';
-	    popup.style.left = '50%';
-	    popup.style.transform = 'translateX(-50%)';
-	    popup.style.background = isSuccess ? '#28a745' : '#dc3545';
-	    popup.style.color = '#fff';
-	    popup.style.padding = '16px 32px';
-	    popup.style.borderRadius = '8px';
-	    popup.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
-	    popup.style.fontSize = '1.1rem';
-	    popup.style.zIndex = 3000;
-	    popup.style.opacity = '0';
-	    popup.style.transition = 'opacity 0.3s';
-	    document.body.appendChild(popup);
-	    setTimeout(() => { popup.style.opacity = '1'; }, 10);
-	    setTimeout(() => {
-	        popup.style.opacity = '0';
-	        setTimeout(() => popup.remove(), 300);
-	    }, 2200);
+		const toast = document.createElement('div');
+		toast.className = `toast align-items-center text-white ${isSuccess ? 'bg-success' : 'bg-danger'} border-0 position-fixed top-0 start-50 translate-middle-x mt-4`;
+		toast.setAttribute('role', 'alert');
+		toast.setAttribute('aria-live', 'assertive');
+		toast.setAttribute('aria-atomic', 'true');
+		toast.style.zIndex = 3000;
+		toast.innerHTML = `
+			<div class="d-flex">
+				<div class="toast-body">${message}</div>
+				<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+			</div>
+		`;
+		document.body.appendChild(toast);
+		setTimeout(() => { toast.classList.add('show'); }, 10);
+		setTimeout(() => {
+			toast.classList.remove('show');
+			setTimeout(() => toast.remove(), 300);
+		}, 2200);
 	}
 
-		       const deleteBtn = card.querySelector('#btn-delete-paquet');
-		       if (deleteBtn) {
-			       deleteBtn.addEventListener('click', async () => {
-				       if (confirm('Voulez-vous vraiment supprimer ce paquet ?')) {
-					       const overlay = document.getElementById('paquet-modal-overlay');
-					       if (overlay) overlay.remove();
-					       const { deletePaquet } = await import('../API/paquet.js');
-					       const result = await deletePaquet(paquet.cote);
-					       if (result && result.success) {
-						       showPopup('Paquet supprimé avec succès.', true);
-						       setTimeout(() => window.location.reload(), 1200);
-					       } else {
-						       showPopup('Erreur lors de la suppression du paquet.', false);
-					       }
-				       }
-			       });
-		       }
+	const deleteBtn = card.querySelector('#btn-delete-paquet');
+	if (deleteBtn) {
+		deleteBtn.addEventListener('click', () => {
+			showDeleteConfirmation(paquet);
+		});
+	}
+
+	function showDeleteConfirmation(paquet) {
+		const oldModal = document.getElementById('delete-confirm-modal-overlay');
+		if (oldModal) oldModal.remove();
+
+		const overlay = document.createElement('div');
+		overlay.id = 'delete-confirm-modal-overlay';
+		overlay.className = 'modal fade show';
+		overlay.tabIndex = -1;
+		overlay.style.display = 'block';
+		overlay.style.background = 'rgba(0,0,0,0.5)';
+		overlay.style.zIndex = 2100;
+
+		const modalDialog = document.createElement('div');
+		modalDialog.className = 'modal-dialog modal-dialog-centered';
+
+		const modalContent = document.createElement('div');
+		modalContent.className = 'modal-content';
+
+		const modalHeader = document.createElement('div');
+		modalHeader.className = 'modal-header';
+
+		const modalTitle = document.createElement('h5');
+		modalTitle.className = 'modal-title fw-bold text-center w-100';
+		modalTitle.textContent = 'Confirmer la suppression';
+
+		const closeBtn = document.createElement('button');
+		closeBtn.type = 'button';
+		closeBtn.className = 'btn-close';
+		closeBtn.setAttribute('aria-label', 'Fermer');
+		closeBtn.addEventListener('click', () => overlay.remove());
+
+		modalHeader.appendChild(modalTitle);
+		modalHeader.appendChild(closeBtn);
+
+		const modalBody = document.createElement('div');
+		modalBody.className = 'modal-body text-center';
+		modalBody.innerHTML = `
+			<p class="mb-3">Êtes-vous sûr de vouloir supprimer le paquet <strong>${paquet.cote}</strong> ?<br><span class="text-danger">Cette action est irréversible.</span></p>
+		`;
+
+		const modalFooter = document.createElement('div');
+		modalFooter.className = 'modal-footer d-flex justify-content-center gap-3';
+
+		const cancelBtn = document.createElement('button');
+		cancelBtn.type = 'button';
+		cancelBtn.className = 'btn btn-secondary px-4';
+		cancelBtn.textContent = 'Annuler';
+		cancelBtn.addEventListener('click', () => overlay.remove());
+
+		const confirmBtn = document.createElement('button');
+		confirmBtn.type = 'button';
+		confirmBtn.className = 'btn btn-danger px-4';
+		confirmBtn.textContent = 'Confirmer la suppression';
+		confirmBtn.addEventListener('click', async () => {
+			const { deletePaquet } = await import('../API/paquet.js');
+			const result = await deletePaquet(paquet.cote);
+			overlay.remove();
+			if (result && result.success) {
+				showPopup('Paquet supprimé avec succès.', true);
+				setTimeout(() => window.location.reload(), 1200);
+			} else {
+				showPopup('Erreur lors de la suppression du paquet.', false);
+			}
+		});
+
+		modalFooter.appendChild(cancelBtn);
+		modalFooter.appendChild(confirmBtn);
+
+		modalContent.appendChild(modalHeader);
+		modalContent.appendChild(modalBody);
+		modalContent.appendChild(modalFooter);
+
+		modalDialog.appendChild(modalContent);
+		overlay.appendChild(modalDialog);
+
+		overlay.addEventListener('click', e => {
+			if (e.target === overlay) overlay.remove();
+		});
+
+		document.body.appendChild(overlay);
+	}
 
 	return card;
 }
