@@ -37,7 +37,7 @@ export function afficherCardPaquetEditModal(paquet) {
 	const modalHeader = document.createElement('div');
 	modalHeader.className = 'modal-header';
 	const title = document.createElement('h5');
-	title.className = 'modal-title fw-bold';
+	title.className = 'modal-title fw-bold text-center w-100';
 	title.textContent = 'Modification d’un paquet';
 
 	const closeBtn = document.createElement('button');

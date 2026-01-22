@@ -2,11 +2,12 @@ import { selectCorpus } from '../../components/selecteur/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
 import { afficherTableauToDoPaquet } from '../../components/toDo.js';
 import { afficherSendErrorPaquet } from '../../components/sendError.js';
+import API_URL from '../../API/config.js';
 
 export default function accueilPage() {
 
     // Vérification utilisateur connecté
-    fetch('http://localhost/stage/backend_nabu/index.php?action=check-auth', {
+    fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
         credentials: 'include'
     })
         .then(r => r.json())
