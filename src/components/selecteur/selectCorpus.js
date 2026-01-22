@@ -18,7 +18,15 @@ export function selectCorpus(onSelect, defaultValue) {
 			allOption.selected = true;
 			select.appendChild(allOption);
 
-			corpusList.data.forEach(corpus => {
+			const sortedCorpus = corpusList.data.slice().sort((a, b) => {
+				const nameA = (a.name_corpus || '').toLowerCase();
+				const nameB = (b.name_corpus || '').toLowerCase();
+				if (nameA < nameB) return -1;
+				if (nameA > nameB) return 1;
+				return 0;
+			});
+
+			sortedCorpus.forEach(corpus => {
 				const option = document.createElement('option');
 				option.value = corpus.idcorpus;
 				option.innerHTML = corpus.desciption_corpus
@@ -49,8 +57,12 @@ export function selectCorpus(onSelect, defaultValue) {
 						width: 'resolve',
 						templateResult: formatCorpusOption,
 						templateSelection: formatCorpusSelection,
-						dropdownParent: window.$(container)
+						dropdownParent: window.$(container),
+						escapeMarkup: function (markup) { return markup; }
 					});
+					const style = document.createElement('style');
+					style.innerHTML = `#corpus-select + .select2 .select2-selection__rendered { text-align: center !important; width: 100%; font-weight: bold; }`;
+					container.appendChild(style);
 				}
 			}, 0);
 		}
@@ -109,10 +121,12 @@ function formatCorpusOption(state) {
 	const option = state.element;
 	if (option && option.dataset && option.dataset.corpus) {
 		const corpus = JSON.parse(option.dataset.corpus);
-		let html = `<div class='corpus-nom'>${corpus.nom}</div>`;
+		let html = `<div style='text-align: center;'>`;
+		html += `<div class='corpus-nom'><b>${corpus.nom}</b></div>`;
 		if (corpus.description) {
-			html += `<div class='corpus-desc'>${corpus.description}</div>`;
+			html += `<div class='corpus-desc' style='color: #6C757D;'>${corpus.description}</div>`;
 		}
+		html += `</div>`;
 		return window.$('<span>').html(html);
 	}
 	return state.text;
@@ -123,7 +137,7 @@ function formatCorpusSelection(state) {
 	const option = state.element;
 	if (option && option.dataset && option.dataset.corpus) {
 		const corpus = JSON.parse(option.dataset.corpus);
-		return corpus.nom;
+		return `<span style='display: inline-block; width: 100%; text-align: center;'><b>${corpus.nom}</b></span>`;
 	}
 	return state.text;
 }
