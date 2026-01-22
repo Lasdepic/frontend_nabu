@@ -167,17 +167,38 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                         <input class="form-check-input" type="checkbox" ${p.envoye ? 'checked' : ''} disabled>
                     </td>
                     <td class="text-center" style="max-width:120px; width:120px;">
-                        <input class="form-check-input" type="checkbox" ${p.aFaire ? 'checked' : ''} disabled>
+                        <input class="form-check-input toDo-checkbox" type="checkbox" ${p.toDo ? 'checked' : ''} data-paquet-idx="${idx}">
                     </td>
                     <td class="d-none">${dateTri}</td>
                 </tr>
                 `;
             }).join('');
         Array.from(tbody.querySelectorAll('tr[data-paquet-idx]')).forEach(tr => {
-            tr.addEventListener('click', function() {
+            tr.addEventListener('click', function(e) {
+
+                if (e.target.classList.contains('toDo-checkbox')) return;
                 const idx = this.getAttribute('data-paquet-idx');
                 const paquet = filteredPaquets[idx];
                 afficherCardPaquetModal(paquet);
+            });
+        });
+        // Ajout du listener pour modifier toDo
+        Array.from(tbody.querySelectorAll('.toDo-checkbox')).forEach(checkbox => {
+            checkbox.addEventListener('change', async function(e) {
+                const idx = this.getAttribute('data-paquet-idx');
+                const paquet = filteredPaquets[idx];
+                const newValue = this.checked;
+
+                paquet.toDo = newValue;
+                try {
+                    const { editPaquet } = await import('../API/paquet.js');
+                    await editPaquet({ ...paquet, toDo: newValue });
+                    if (window.afficherTableauToDoPaquet) {
+                        window.afficherTableauToDoPaquet('to-do-paquet-conteneur');
+                    }
+                } catch (err) {
+                    alert('Erreur lors de la modification du toDo');
+                }
             });
         });
     }
@@ -220,13 +241,12 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     // Attendre que DataTables soit chargé avant d'initialiser
     await loadDataTablesOnce();
-    // Protéger contre double init
     if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
         $('#tableau-paquet').DataTable().destroy();
     }
     // Tri par la colonne cachée (8ème colonne, index 7) en décroissant
     $('#tableau-paquet').DataTable({
-        lengthMenu: [[25, 50, 75, 100, -1], [25, 50, 75, 100, "Tous"]],
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
         },

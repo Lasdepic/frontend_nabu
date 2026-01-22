@@ -25,7 +25,7 @@ export default function accueilPage() {
         document.body.appendChild(main);
     }
 
-    main.className = 'bg-light min-vh-100 py-4';
+    main.className = 'bg-white py-4';
     main.innerHTML = '';
 
     /* =======================
@@ -112,6 +112,8 @@ export default function accueilPage() {
     afficherTableauPaquet('tableau-paquet-conteneur');
     afficherTableauToDoPaquet('to-do-paquet-conteneur');
     afficherSendErrorPaquet('send-error-paquet-conteneur');
+    // Expose la fonction ToDo sur window pour le rafraîchissement global
+    window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
