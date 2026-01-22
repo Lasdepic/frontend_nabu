@@ -202,16 +202,61 @@ export async function createCardPaquet(paquet) {
    SUPPRESSION
 ========================================================== */
 async function showDeleteConfirmation(paquet) {
-	if (!confirm(`Supprimer définitivement le paquet ${paquet.cote} ?`)) return;
+		// Supprime toute ancienne modale de confirmation
+		document.getElementById('delete-modal-overlay')?.remove();
 
-	const result = await deletePaquet(paquet.cote);
+		// Création de l'overlay
+		const overlay = document.createElement('div');
+		overlay.id = 'delete-modal-overlay';
+		overlay.className = 'modal fade show';
+		overlay.style.display = 'block';
+		overlay.style.background = 'rgba(0,0,0,0.5)';
+		overlay.style.zIndex = 3000;
 
-	if (result?.success) {
-		showToast('Paquet supprimé');
-		setTimeout(() => location.reload(), 1000);
-	} else {
-		showToast('Erreur lors de la suppression', false);
-	}
+		// Création de la modale
+		const dialog = document.createElement('div');
+		dialog.className = 'modal-dialog modal-dialog-centered';
+
+		const content = document.createElement('div');
+		content.className = 'modal-content';
+		content.innerHTML = `
+			<div class="modal-header">
+				<h5 class="modal-title w-100 text-center">Confirmer la suppression</h5>
+				<button class="btn-close"></button>
+			</div>
+			<div class="modal-body text-center">
+				<p>Voulez-vous vraiment supprimer définitivement le paquet <strong>${paquet.cote}</strong> ?</p>
+			</div>
+			<div class="modal-footer justify-content-center">
+				<button class="btn btn-secondary" id="cancel-delete">Annuler</button>
+				<button class="btn btn-danger" id="confirm-delete">Supprimer</button>
+			</div>
+		`;
+
+		// Fermeture sur croix ou annuler
+		content.querySelector('.btn-close').onclick = () => overlay.remove();
+		content.querySelector('#cancel-delete').onclick = () => overlay.remove();
+
+		// Suppression réelle
+		content.querySelector('#confirm-delete').onclick = async () => {
+			const result = await deletePaquet(paquet.cote);
+			overlay.remove();
+			if (result?.success) {
+				showToast('Paquet supprimé');
+				setTimeout(() => location.reload(), 1000);
+			} else {
+				showToast('Erreur lors de la suppression', false);
+			}
+		};
+
+		dialog.appendChild(content);
+		overlay.appendChild(dialog);
+		document.body.appendChild(overlay);
+
+		// Ferme la modale si clic sur l'overlay
+		overlay.addEventListener('click', e => {
+			if (e.target === overlay) overlay.remove();
+		});
 }
 
 /* ==========================================================
