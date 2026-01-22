@@ -72,7 +72,6 @@ export default function accueilPage() {
     const sideColWrapper = document.createElement('div');
     sideColWrapper.className = 'col-12 col-lg-3';
 
-    // Colonne sticky
     const sideCol = document.createElement('div');
     sideCol.className = 'side-fixed';
 
@@ -109,16 +108,21 @@ export default function accueilPage() {
     /* =======================
        RENDUS
     ======================= */
-    afficherTableauPaquet('tableau-paquet-conteneur');
-    afficherTableauToDoPaquet('to-do-paquet-conteneur');
-    afficherSendErrorPaquet('send-error-paquet-conteneur');
     // Expose la fonction ToDo sur window pour le rafraîchissement global
     window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
+
+        // ✅ On vide le conteneur avant d'afficher le tableau
+        const tableauConteneur = document.getElementById('tableau-paquet-conteneur');
+        tableauConteneur.innerHTML = '';
+
         afficherTableauPaquet('tableau-paquet-conteneur', id);
         afficherTableauToDoPaquet('to-do-paquet-conteneur', id);
         afficherSendErrorPaquet('send-error-paquet-conteneur', id);
     }
+
+    // Appel initial : on simule une sélection "aucun corpus" pour charger une seule fois
+    onCorpusSelect(null);
 }
