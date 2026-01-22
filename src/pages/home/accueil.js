@@ -25,7 +25,7 @@ export default function accueilPage() {
         document.body.appendChild(main);
     }
 
-    main.className = 'bg-light min-vh-100 py-4';
+    main.className = 'bg-white py-4';
     main.innerHTML = '';
 
     /* =======================

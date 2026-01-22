@@ -246,7 +246,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     }
     // Tri par la colonne cachée (8ème colonne, index 7) en décroissant
     $('#tableau-paquet').DataTable({
-        lengthMenu: [[25, 50, 75, 100, -1], [25, 50, 75, 100, "Tous"]],
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
         },
