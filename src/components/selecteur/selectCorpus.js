@@ -14,7 +14,11 @@ export function selectCorpus(onSelect, defaultValue) {
 			const allOption = document.createElement('option');
 			allOption.value = 'ALL';
 			allOption.textContent = 'TOUS';
-			allOption.dataset.corpus = '';
+			allOption.dataset.corpus = JSON.stringify({
+				id: 'ALL',
+				nom: 'TOUS',
+				description: 'Afficher tous les paquets'
+			});
 			allOption.selected = true;
 			select.appendChild(allOption);
 
@@ -61,7 +65,16 @@ export function selectCorpus(onSelect, defaultValue) {
 						escapeMarkup: function (markup) { return markup; }
 					});
 					const style = document.createElement('style');
-					style.innerHTML = `#corpus-select + .select2 .select2-selection__rendered { text-align: center !important; width: 100%; font-weight: bold; }`;
+					style.innerHTML = `
+						#corpus-select + .select2 .select2-selection__rendered {
+							text-align: center !important;
+							width: 100%;
+							font-weight: bold;
+						}
+						.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
+							text-align: center !important;
+						}
+					`;
 					container.appendChild(style);
 				}
 			}, 0);
