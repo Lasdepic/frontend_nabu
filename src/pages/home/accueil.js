@@ -112,6 +112,8 @@ export default function accueilPage() {
     afficherTableauPaquet('tableau-paquet-conteneur');
     afficherTableauToDoPaquet('to-do-paquet-conteneur');
     afficherSendErrorPaquet('send-error-paquet-conteneur');
+    // Expose la fonction ToDo sur window pour le rafraîchissement global
+    window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
