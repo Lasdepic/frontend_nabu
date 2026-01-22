@@ -18,7 +18,7 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 	conteneur.style.zIndex = '1000';
 
 	// Titre tableau à faire
-	conteneur.innerHTML = `<div class="bg-dark text-white text-center py-2 rounded mb-3" style="font-size:1rem;font-weight:400;">A Faire</div>`;
+	conteneur.innerHTML = `<div class="bg-dark text-white text-center py-2 mb-3" style="font-size:1rem;font-weight:400;">A Faire</div>`;
 
 	// Récupère tous les paquets
 	const paquetsResult = await fetchAllPaquets();
