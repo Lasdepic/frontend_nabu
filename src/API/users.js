@@ -58,7 +58,7 @@ export async function deleteUser(id) {
 // Modifier le mot de passe d'un utilisateur
 export async function updateUserPassword(id, password) {
 	try {
-		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=update-password`, {
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=update-user-password`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',

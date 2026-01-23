@@ -27,6 +27,9 @@ export function createNavbar(isLoginPage = false) {
                             <a class="nav-link text-white" href="index.html">Accueil</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link text-white" href="#/admin">Admin</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link text-white" href="#" id="logoutBtn">Déconnexion</a>
                         </li>
                     </ul>
