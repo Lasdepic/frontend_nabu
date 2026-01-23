@@ -18,7 +18,7 @@ export async function afficherSendErrorPaquet(conteneurId = 'to-do-paquet-conten
     conteneur.style.zIndex = '1000';
 
     // Titre tableau erreurs d'envoi
-    conteneur.innerHTML = `<div class="text-center py-2 rounded mb-3" style="background-color:#212529;color:#fff;font-size:1rem;font-weight:400;">Envoi en erreur</div>`;
+    conteneur.innerHTML = `<div class="text-center py-2 mb-3" style="background-color:#212529;color:#fff;font-size:1rem;font-weight:400;">Envoi en erreur</div>`;
 
     // Récupère tous les paquets
     const paquetsResult = await fetchAllPaquets();

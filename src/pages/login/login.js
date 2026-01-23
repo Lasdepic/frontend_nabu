@@ -79,6 +79,12 @@ export default function loginPage() {
 			const { login } = await import('../../API/auth.js');
 			const result = await login(email, password);
 			if (result && (result.success === true || result.authenticated === true)) {
+
+				if (result.user && result.user.role) {
+					localStorage.setItem('userRole', result.user.role);
+				} else {
+					localStorage.removeItem('userRole');
+				}
 				window.location.href = 'index.html';
 			} else {
 				errorDiv.textContent = 'Email ou mot de passe incorrect.';
