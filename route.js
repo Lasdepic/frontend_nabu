@@ -1,4 +1,5 @@
 import { isAuthenticated } from './src/API/auth.js';
+import { getCurrentUser } from './src/API/currentUser.js';
 
 const routes = {
 	'/': {
@@ -28,6 +29,21 @@ async function navigate(path) {
 	if (authenticated && path === '/login') {
 		window.location.hash = '#/';
 		return;
+	}
+
+	// Restriction d'accès à la page admin : seul un user admin (roleId === 1) peut accéder
+	if (path === '/admin') {
+		const user = await getCurrentUser();
+		if (!user || user.roleId !== 1) {
+			window.location.hash = '#/';
+			return;
+		}
+	}
+
+	// Vide le contenu de <main> avant d'afficher la nouvelle page
+	let main = document.querySelector('main');
+	if (main) {
+		main.innerHTML = '';
 	}
 	const route = routes[path] || routes['/'];
 	document.title = route.title;

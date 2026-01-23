@@ -171,7 +171,7 @@ export function afficherCardPaquetAddModal() {
 		if (selectTypeDocEl && selectTypeDocEl.value) {
 			data.typeDocumentId = selectTypeDocEl.value;
 		} else {
-			delete data.typeDocumentId;
+			data.typeDocumentId = null;
 		}
 		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
@@ -195,15 +195,24 @@ export function afficherCardPaquetAddModal() {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
-			// Rafraîchir le tableau des paquets
-			if (window.afficherTableauPaquet) {
-				window.afficherTableauPaquet('tableau-paquet-conteneur');
-			} else {
-				const tableau = document.getElementById('tableau-paquet-conteneur');
-				if (tableau && typeof window.reloadTableauPaquet === 'function') {
-					window.reloadTableauPaquet();
-				}
-			}
+			   // Rafraîchir le tableau des paquets de façon robuste
+			   const refreshTableau = async () => {
+				   if (window.afficherTableauPaquet) {
+					   window.afficherTableauPaquet('tableau-paquet-conteneur');
+				   } else {
+					   try {
+						   const module = await import('../tableauPaquet.js');
+						   if (module && typeof module.afficherTableauPaquet === 'function') {
+							   module.afficherTableauPaquet('tableau-paquet-conteneur');
+						   } else if (window.reloadTableauPaquet) {
+							   window.reloadTableauPaquet();
+						   }
+					   } catch (e) {
+						   // Optionnel : afficher une erreur ou log
+					   }
+				   }
+			   };
+			   refreshTableau();
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {

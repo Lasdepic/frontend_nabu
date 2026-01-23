@@ -159,7 +159,7 @@ export function afficherCardPaquetEditModal(paquet) {
 		if (selectTypeDocEl && selectTypeDocEl.value) {
 			data.typeDocumentId = selectTypeDocEl.value;
 		} else {
-			delete data.typeDocumentId;
+			data.typeDocumentId = null;
 		}
 		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
