@@ -129,32 +129,27 @@ export async function createCardPaquet(paquet) {
 	const card = document.createElement('div');
 	card.className = 'card shadow border-0';
 
+	const userRole = localStorage.getItem('userRole');
 	card.innerHTML = `
 		<div class="card-body">
 			<ul class="list-group list-group-flush mb-3">
-
-				   <li class="list-group-item">
-					   <strong>Dossier :</strong> ${paquet.folderName ?? ''}
-				   </li>
-
-				   <li class="list-group-item">
-					   <strong>Cote :</strong> ${paquet.cote ?? ''}
-				   </li>
-
+				<li class="list-group-item">
+					<strong>Dossier :</strong> ${paquet.folderName ?? ''}
+				</li>
+				<li class="list-group-item">
+					<strong>Cote :</strong> ${paquet.cote ?? ''}
+				</li>
 				<li class="list-group-item"><strong>Corpus :</strong> ${paquet.corpus ?? ''}</li>
 				<li class="list-group-item"><strong>Microfilms :</strong> ${paquet.microFilmImage ?? ''}</li>
 				<li class="list-group-item"><strong>Images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
 				<li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
-
 				<li class="list-group-item">
 					<strong>Status :</strong> ${createStatusBadge(status)}
 				</li>
-
 				<li class="list-group-item">
 					<strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}
 				</li>
 			</ul>
-
 			<div class="row mb-3 text-center">
 				<div class="col">
 					<input type="checkbox" disabled ${paquet.toDo ? 'checked' : ''}> À faire
@@ -166,19 +161,19 @@ export async function createCardPaquet(paquet) {
 					<input type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''}> SIP
 				</div>
 			</div>
-
 			<div class="mb-3">
 				<strong>Commentaire</strong>
 				<div class="border rounded p-2 bg-light">${paquet.commentaire ?? ''}</div>
 			</div>
-
 			<div class="d-flex justify-content-center gap-3">
 				<button class="btn btn-primary px-4" id="edit">
 					<i class="bi bi-pencil"></i> Modifier
 				</button>
+				${userRole === 'admin' ? `
 				<button class="btn btn-danger px-4" id="delete">
 					<i class="bi bi-trash"></i> Supprimer
 				</button>
+				` : ''}
 			</div>
 		</div>
 	`;
@@ -191,9 +186,12 @@ export async function createCardPaquet(paquet) {
 		afficherCardPaquetEditModal(paquet);
 	});
 
-	card.querySelector('#delete').addEventListener('click', () =>
-		showDeleteConfirmation(paquet)
-	);
+	// Ajoute l'écouteur du bouton supprimer seulement si admin
+	if (userRole === 'admin') {
+		card.querySelector('#delete').addEventListener('click', () =>
+			showDeleteConfirmation(paquet)
+		);
+	}
 
 	return card;
 }

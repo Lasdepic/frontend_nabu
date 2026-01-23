@@ -162,7 +162,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         scrollX: true,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         order: [[7, 'desc']],
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json' }
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json',
+            info: `<span class='badge bg-info'><span>nombre de paquet : ${filteredPaquets.length}</span></span>`
+        }
     });
 
     // Ajouter les boutons et custom pagination
@@ -191,22 +194,59 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
 
         if (dataTablesPaginate) {
-            dataTablesPaginate.innerHTML = '';
-            const pageInputWrap = document.createElement('div');
-            pageInputWrap.style.display = 'flex';
-            pageInputWrap.style.alignItems = 'center';
-            pageInputWrap.style.gap = '0.5em';
-            const label = document.createElement('label'); label.textContent = 'Page :'; label.style.margin = 0;
-            const pageInput = document.createElement('input'); pageInput.type = 'number'; pageInput.min = 1; pageInput.value = table.page() + 1; pageInput.style.width = '60px'; pageInput.className = 'form-control';
-            const totalPagesSpan = document.createElement('span'); totalPagesSpan.textContent = `/ ${table.page.info().pages}`; totalPagesSpan.style.marginLeft = '0.25em';
-            pageInput.addEventListener('change', () => {
-                let pageNum = parseInt(pageInput.value, 10);
-                if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
-                if (pageNum > table.page.info().pages) pageNum = table.page.info().pages;
-                table.page(pageNum - 1).draw('page');
-            });
-            pageInputWrap.appendChild(label); pageInputWrap.appendChild(pageInput); pageInputWrap.appendChild(totalPagesSpan);
-            dataTablesPaginate.appendChild(pageInputWrap);
+            // Masquer la pagination personnalisée si une seule page
+            if (table.page.info().pages > 1) {
+                dataTablesPaginate.innerHTML = '';
+                const pageInputWrap = document.createElement('div');
+                pageInputWrap.style.display = 'flex';
+                pageInputWrap.style.alignItems = 'center';
+                pageInputWrap.style.gap = '0.5em';
+                const prevBtn = document.createElement('button');
+                prevBtn.type = 'button';
+                prevBtn.className = 'btn btn-outline-secondary btn-sm';
+                prevBtn.innerHTML = '&#8592;';
+                prevBtn.title = 'Page précédente';
+                prevBtn.onclick = () => {
+                    let pageNum = table.page();
+                    if (pageNum > 0) table.page(pageNum - 1).draw('page');
+                };
+                const nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'btn btn-outline-secondary btn-sm';
+                nextBtn.innerHTML = '&#8594;';
+                nextBtn.title = 'Page suivante';
+                nextBtn.onclick = () => {
+                    let pageNum = table.page();
+                    if (pageNum < table.page.info().pages - 1) table.page(pageNum + 1).draw('page');
+                };
+                const label = document.createElement('label'); label.textContent = 'Page :'; label.style.margin = 0;
+                const pageInput = document.createElement('input');
+                pageInput.type = 'number';
+                pageInput.min = 1;
+                pageInput.value = table.page() + 1;
+                pageInput.style.width = '60px';
+                pageInput.className = 'form-control';
+                pageInput.style.MozAppearance = 'textfield';
+                pageInput.style.WebkitAppearance = 'none';
+                pageInput.style.appearance = 'none';
+                pageInput.addEventListener('change', () => {
+                    let pageNum = parseInt(pageInput.value, 10);
+                    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+                    if (pageNum > table.page.info().pages) pageNum = table.page.info().pages;
+                    table.page(pageNum - 1).draw('page');
+                });
+                const totalPagesSpan = document.createElement('span');
+                totalPagesSpan.textContent = `/ ${table.page.info().pages}`;
+                totalPagesSpan.style.marginLeft = '0.25em';
+                pageInputWrap.appendChild(prevBtn);
+                pageInputWrap.appendChild(label);
+                pageInputWrap.appendChild(pageInput);
+                pageInputWrap.appendChild(totalPagesSpan);
+                pageInputWrap.appendChild(nextBtn);
+                dataTablesPaginate.appendChild(pageInputWrap);
+            } else {
+                dataTablesPaginate.innerHTML = '';
+            }
         }
     }
     setTimeout(addPaquetAndCustomPagination, 100);

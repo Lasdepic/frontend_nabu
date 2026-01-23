@@ -195,8 +195,14 @@ export function afficherCardPaquetAddModal() {
 		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
+			// Rafraîchir le tableau des paquets
 			if (window.afficherTableauPaquet) {
 				window.afficherTableauPaquet('tableau-paquet-conteneur');
+			} else {
+				const tableau = document.getElementById('tableau-paquet-conteneur');
+				if (tableau && typeof window.reloadTableauPaquet === 'function') {
+					window.reloadTableauPaquet();
+				}
 			}
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);

@@ -6,7 +6,7 @@ import API_URL from '../../API/config.js';
 
 export default function accueilPage() {
 
-    // Vérification utilisateur connecté
+    // Vérification utilisateur connecté et stockage du rôle
     fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
         credentials: 'include'
     })
@@ -14,8 +14,14 @@ export default function accueilPage() {
         .then(data => {
             if (data?.authenticated && data?.user?.id) {
                 localStorage.setItem('userId', data.user.id);
+                if (data.user.role) {
+                    localStorage.setItem('userRole', data.user.role);
+                } else {
+                    localStorage.removeItem('userRole');
+                }
             } else {
                 localStorage.removeItem('userId');
+                localStorage.removeItem('userRole');
             }
         });
 
