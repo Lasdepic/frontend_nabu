@@ -4,13 +4,10 @@ import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
 import { editPaquet } from '../../API/paquet.js';
 
-// Affiche une modale avec un formulaire pour modifier le paquet, style Bootstrap harmonisé avec addPaquet.js
 export function afficherCardPaquetEditModal(paquet) {
-	// Supprime toute modale existante
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
-	// Overlay Bootstrap style
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
 	overlay.className = 'modal fade show';
@@ -23,17 +20,14 @@ export function afficherCardPaquetEditModal(paquet) {
 	overlay.style.height = '100vh';
 	overlay.style.zIndex = 2000;
 
-	// Modal dialog
 	const modal = document.createElement('div');
 	modal.className = 'modal-dialog modal-dialog-centered';
 	modal.style.maxWidth = '700px';
 	modal.style.width = '100%';
 
-	// Modal content
 	const modalContent = document.createElement('div');
 	modalContent.className = 'modal-content shadow-lg';
 
-	// Modal header
 	const modalHeader = document.createElement('div');
 	modalHeader.className = 'modal-header';
 	const title = document.createElement('h5');
@@ -49,7 +43,6 @@ export function afficherCardPaquetEditModal(paquet) {
 	modalHeader.appendChild(title);
 	modalHeader.appendChild(closeBtn);
 
-	// Modal body (form)
 	const form = document.createElement('form');
 	form.className = 'modal-body';
 	const connectedUserId = localStorage.getItem('userId') || '';
@@ -116,7 +109,6 @@ export function afficherCardPaquetEditModal(paquet) {
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
 
-	// Ajout des sélecteurs dynamiques (corpus, type doc, statut)
 	(async () => {
 		const corpusContainer = form.querySelector('#corpus-select-container');
 		if (corpusContainer) {
@@ -139,39 +131,32 @@ export function afficherCardPaquetEditModal(paquet) {
 		e.preventDefault();
 		const formData = new FormData(form);
 		const data = Object.fromEntries(formData.entries());
-		// Ajout explicite de oldCote (pour éviter tout souci si le champ est modifié dynamiquement)
 		if (!data.oldCote && paquet.cote) {
 			data.oldCote = paquet.cote;
 		}
-		// Gestion des booléens
 		data.toDo = !!form.querySelector('[name="toDo"]').checked;
 		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
-		// CorpusId
 		const selectCorpusEl = form.querySelector('#corpus-select-container select');
 		if (selectCorpusEl && selectCorpusEl.value) {
 			data.corpusId = selectCorpusEl.value;
 		} else {
 			delete data.corpusId;
 		}
-		// TypeDocumentId
 		const selectTypeDocEl = form.querySelector('#type-document-select-container select');
 		if (selectTypeDocEl && selectTypeDocEl.value) {
 			data.typeDocumentId = selectTypeDocEl.value;
 		} else {
 			data.typeDocumentId = null;
 		}
-		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
 		if (selectStatusEl && selectStatusEl.value) {
 			data.statusId = selectStatusEl.value;
 		} else {
 			delete data.statusId;
 		}
-		// Commentaire
 		data.commentaire = data.comment;
 		delete data.comment;
-		// Vérification des champs obligatoires
 		if (!data.folderName || !data.cote) {
 			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;
@@ -183,7 +168,6 @@ export function afficherCardPaquetEditModal(paquet) {
 			res = null;
 		}
 		overlay.remove();
-		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été modifié.', true);
 			if (window.$ && window.$.fn && window.$.fn.DataTable) {
@@ -202,7 +186,6 @@ export function afficherCardPaquetEditModal(paquet) {
 		}
 	});
 
-	// Fonction utilitaire pour afficher une popup Bootstrap
 	function showPopup(message, success = true) {
 		const popup = document.createElement('div');
 		popup.className = `alert ${success ? 'alert-success' : 'alert-danger'} position-fixed top-0 start-50 translate-middle-x mt-3 shadow`;
@@ -220,10 +203,8 @@ export function afficherCardPaquetEditModal(paquet) {
 	modalContent.appendChild(form);
 	modal.appendChild(modalContent);
 	overlay.appendChild(modal);
-
 	overlay.addEventListener('click', e => {
 		if (e.target === overlay) overlay.remove();
 	});
-
 	document.body.appendChild(overlay);
 }
