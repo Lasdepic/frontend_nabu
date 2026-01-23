@@ -4,9 +4,7 @@ import { afficherCardUtilisateurs } from '../../components/admin/displayAllProfi
 
 export default async function adminPage() {
 	const main = document.querySelector('main') || createMain();
-	main.innerHTML = `<div class="container mt-5"><h1>Page Admin</h1></div>`;
 
-	// Affiche la liste des utilisateurs sous le titre
 	const container = document.createElement('div');
 	container.className = 'container';
 	main.appendChild(container);
