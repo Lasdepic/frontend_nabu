@@ -35,9 +35,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     }
 
     if (window.$ && window.$.fn && window.$.fn.DataTable) {
-        const oldTable = window.$('#tableau-paquet');
-        if (oldTable.length && oldTable.hasClass('dataTable')) {
-            oldTable.DataTable().destroy();
+        if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
+            $('#tableau-paquet').DataTable().destroy();
         }
     }
 
