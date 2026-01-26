@@ -239,10 +239,19 @@ async function showDeleteConfirmation(paquet) {
 		content.querySelector('#confirm-delete').onclick = async () => {
 			const result = await deletePaquet(paquet.cote);
 			overlay.remove();
-			if (result?.success) {
-				showToast('Paquet supprimé');
-				setTimeout(() => location.reload(), 1000);
-			} else {
+			   if (result?.success) {
+				   showToast('Paquet supprimé');
+				   // Rafraîchir les tableaux sans reload
+				   if (window.afficherTableauPaquet) {
+					   window.afficherTableauPaquet('tableau-paquet-conteneur');
+				   }
+				   if (window.afficherTableauToDoPaquet) {
+					   window.afficherTableauToDoPaquet('to-do-paquet-conteneur');
+				   }
+				   if (window.afficherSendErrorPaquet) {
+					   window.afficherSendErrorPaquet('send-error-paquet-conteneur');
+				   }
+			   } else {
 				showToast('Erreur lors de la suppression', false);
 			}
 		};

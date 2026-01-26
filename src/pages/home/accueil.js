@@ -14,8 +14,8 @@ export default function accueilPage() {
         .then(data => {
             if (data?.authenticated && data?.user?.id) {
                 localStorage.setItem('userId', data.user.id);
-                if (data.user.role) {
-                    localStorage.setItem('userRole', data.user.role);
+                if (data.user.roleId) {
+                    localStorage.setItem('userRole', data.user.roleId === 1 ? 'admin' : 'user');
                 } else {
                     localStorage.removeItem('userRole');
                 }
@@ -116,11 +116,11 @@ export default function accueilPage() {
     ======================= */
     // Expose la fonction ToDo sur window pour le rafraîchissement global
     window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
+    window.afficherSendErrorPaquet = afficherSendErrorPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
 
-        // ✅ On vide le conteneur avant d'afficher le tableau
         const tableauConteneur = document.getElementById('tableau-paquet-conteneur');
         tableauConteneur.innerHTML = '';
 
