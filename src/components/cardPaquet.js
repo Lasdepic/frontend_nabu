@@ -83,46 +83,54 @@ export async function afficherCardPaquetModal(paquet) {
 }
 
 export async function createCardPaquet(paquet) {
-	const status = await getStatusById(paquet.statusId);
-	const card = document.createElement('div');
-	card.className = 'card shadow border-0';
-	const userRole = localStorage.getItem('userRole');
-	card.innerHTML = `
-		<div class="card-body">
-			<ul class="list-group list-group-flush mb-3">
-				<li class="list-group-item"><strong>Dossier :</strong> ${paquet.folderName ?? ''}</li>
-				<li class="list-group-item"><strong>Cote :</strong> ${paquet.cote ?? ''}</li>
-				<li class="list-group-item"><strong>Corpus :</strong> ${paquet.corpus ?? ''}</li>
-				<li class="list-group-item"><strong>Microfilms :</strong> ${paquet.microFilmImage ?? ''}</li>
-				<li class="list-group-item"><strong>Images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
-				<li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
-				<li class="list-group-item"><strong>Status :</strong> ${createStatusBadge(status)}</li>
-				<li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
-			</ul>
-			<div class="row mb-3 text-center">
-				<div class="col"><input type="checkbox" disabled ${paquet.toDo ? 'checked' : ''}> À faire</div>
-				<div class="col"><input type="checkbox" disabled ${paquet.facileTest ? 'checked' : ''}> Multi-volume</div>
-				<div class="col"><input type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''}> SIP</div>
-			</div>
-			<div class="mb-3">
-				<strong>Commentaire</strong>
-				<div class="border rounded p-2 bg-light">${paquet.commentaire ?? ''}</div>
-			</div>
-			<div class="d-flex justify-content-center gap-3">
-				<button class="btn btn-primary px-4" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
-				${userRole === 'admin' ? `<button class="btn btn-danger px-4" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
-			</div>
-		</div>
-	`;
-	card.querySelector('#edit').addEventListener('click', async () => {
-		document.getElementById('paquet-modal-overlay')?.remove();
-		const { afficherCardPaquetEditModal } = await import('./editPaquet/editPaquet.js');
-		afficherCardPaquetEditModal(paquet);
-	});
-	if (userRole === 'admin') {
-		card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
-	}
-	return card;
+	       const status = await getStatusById(paquet.statusId);
+	       const card = document.createElement('div');
+	       card.className = 'card shadow border-0';
+	       const userRole = localStorage.getItem('userRole');
+	       const isDeleteVisible = userRole === 'admin' && status?.nameStatus !== 'ENVOI_OK';
+	       const showHistoriqueBtn = status?.nameStatus === 'ENVOI_OK';
+	       card.innerHTML = `
+		       <div class="card-body">
+			       <ul class="list-group list-group-flush mb-3">
+				       <li class="list-group-item"><strong>Dossier :</strong> ${paquet.folderName ?? ''}</li>
+				       <li class="list-group-item"><strong>Cote :</strong> ${paquet.cote ?? ''}</li>
+				       <li class="list-group-item"><strong>Corpus :</strong> ${paquet.corpus ?? ''}</li>
+				       <li class="list-group-item"><strong>Répertoire des images microfilms :</strong> ${paquet.microFilmImage ?? ''}</li>
+				       <li class="list-group-item"><strong>Répertoire des images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
+				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
+				       <li class="list-group-item"><strong>Status :</strong> ${createStatusBadge(status)}</li>
+				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
+			       </ul>
+			       <div class="row mb-3 text-center">
+				       <div class="col"><input type="checkbox" disabled ${paquet.toDo ? 'checked' : ''}> À faire</div>
+				       <div class="col"><input type="checkbox" disabled ${paquet.facileTest ? 'checked' : ''}> Multi-volume</div>
+				       <div class="col"><input type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''}> SIP</div>
+			       </div>
+			       <div class="mb-3">
+				       <strong>Commentaire</strong>
+				       <div class="border rounded p-2 bg-light">${paquet.commentaire ?? ''}</div>
+			       </div>
+			       <div class="d-flex justify-content-center gap-3 flex-wrap">
+				       <button class="btn btn-primary px-4" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
+				       ${isDeleteVisible ? `<button class="btn btn-danger px-4" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
+				       ${showHistoriqueBtn ? `<button class="btn btn-success px-4" id="historique"><i class="bi bi-clock-history"></i> Historique d'envoi</button>` : ''}
+			       </div>
+		       </div>
+	       `;
+	       card.querySelector('#edit').addEventListener('click', async () => {
+		       document.getElementById('paquet-modal-overlay')?.remove();
+		       const { afficherCardPaquetEditModal } = await import('./editPaquet/editPaquet.js');
+		       afficherCardPaquetEditModal(paquet);
+	       });
+	       if (isDeleteVisible) {
+		       card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
+	       }
+	       if (card.querySelector('#historique')) {
+		       card.querySelector('#historique').addEventListener('click', () => {
+			       showToast("Bientôt je pourrais afficher les historiques d'envoi du paquet", true);
+		       });
+	       }
+	       return card;
 }
 
 async function showDeleteConfirmation(paquet) {

@@ -131,6 +131,25 @@ export function afficherCardPaquetAddModal() {
 		if (corpusContainer) {
 			const corpusSelector = selectCorpus();
 			corpusContainer.appendChild(corpusSelector);
+
+			// Ajout du bouton "Créer un corpus"
+			const createCorpusBtn = document.createElement('button');
+			createCorpusBtn.type = 'button';
+			createCorpusBtn.className = 'btn btn-outline-primary btn-sm ms-2';
+			createCorpusBtn.textContent = 'Créer un corpus';
+			createCorpusBtn.style.marginTop = '8px';
+			corpusContainer.appendChild(createCorpusBtn);
+
+			createCorpusBtn.onclick = async () => {
+				const { showCreateCorpusModal } = await import('../selecteur/createCorpusModal.js');
+				showCreateCorpusModal(async () => {
+					// Après création, rafraîchir le selecteur de corpus
+					corpusContainer.innerHTML = '';
+					const newSelector = selectCorpus();
+					corpusContainer.appendChild(newSelector);
+					corpusContainer.appendChild(createCorpusBtn);
+				});
+			};
 		}
 		const typeDocContainer = form.querySelector('#type-document-select-container');
 		if (typeDocContainer) {

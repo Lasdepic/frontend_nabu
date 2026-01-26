@@ -71,7 +71,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                         <th style="background:#212529;color:#fff;">Corpus</th>
                         <th style="background:#212529;color:#fff;">Commentaire</th>
                         <th style="background:#212529;color:#fff;">Déposé en SIP</th>
-                        <th style="background:#212529;color:#fff;">Envoyé</th>
+                        <th style="background:#212529;color:#fff;">Status</th>
                         <th style="background:#212529;color:#fff;">À faire</th>
                         <th class="d-none" style="background:#212529;color:#fff;">DateTri</th>
                     </tr>
