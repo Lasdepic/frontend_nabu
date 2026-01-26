@@ -1,2 +1,44 @@
+/* Sticky latéral pour la colonne droite, sans modifier la hauteur ni overflow */
+.side-fixed {
+	position: sticky;
+	top: 100px;
+}
+input[type="number"] {
+	text-align: center;
+}
+input[type="number"]::-webkit-inner-spin-button, 
+input[type="number"]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+input[type="number"] {
+	-moz-appearance: textfield;
+}
+#tableau-paquet .form-control[type="number"]::-webkit-inner-spin-button, 
+#tableau-paquet .form-control[type="number"]::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+#tableau-paquet .form-control[type="number"] {
+	-moz-appearance: textfield;
+}
+#corpus-select, .select2-container--default .select2-selection--single {
+	width: 100% !important;
+	font-size: 1em !important;
+	padding: 8px 16px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	text-align: center !important;
+}
+
+#corpus-select option {
+	text-align: center !important;
+	direction: ltr !important;
+}
+
+.dataTables_paginate {
+    margin-top: 10px !important;
+}
 
 

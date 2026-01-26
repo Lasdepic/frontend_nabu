@@ -6,7 +6,7 @@ import API_URL from '../../API/config.js';
 
 export default function accueilPage() {
 
-    // Vérification utilisateur connecté
+    // Vérification utilisateur connecté et stockage du rôle
     fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
         credentials: 'include'
     })
@@ -14,8 +14,14 @@ export default function accueilPage() {
         .then(data => {
             if (data?.authenticated && data?.user?.id) {
                 localStorage.setItem('userId', data.user.id);
+                if (data.user.roleId) {
+                    localStorage.setItem('userRole', data.user.roleId === 1 ? 'admin' : 'user');
+                } else {
+                    localStorage.removeItem('userRole');
+                }
             } else {
                 localStorage.removeItem('userId');
+                localStorage.removeItem('userRole');
             }
         });
 
@@ -110,11 +116,11 @@ export default function accueilPage() {
     ======================= */
     // Expose la fonction ToDo sur window pour le rafraîchissement global
     window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
+    window.afficherSendErrorPaquet = afficherSendErrorPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
 
-        // ✅ On vide le conteneur avant d'afficher le tableau
         const tableauConteneur = document.getElementById('tableau-paquet-conteneur');
         tableauConteneur.innerHTML = '';
 

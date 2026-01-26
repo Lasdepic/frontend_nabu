@@ -74,11 +74,6 @@ export function selectCorpus(onSelect, defaultValue) {
 						.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
 							text-align: center !important;
 						}
-                        #corpus-select,
-                        #corpus-select + .select2 .select2-selection__rendered,
-                        .select2-container--default .select2-results__option {
-                            font-family: 'Cormorant Garamond', serif !important;
-                        }
 					`;
 					container.appendChild(style);
 				}

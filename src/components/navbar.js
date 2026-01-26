@@ -26,6 +26,9 @@ export function createNavbar(isLoginPage = false) {
                         <li class="nav-item">
                             <a class="nav-link text-white" href="index.html">Accueil</a>
                         </li>
+                        <li class="nav-item" id="adminNavItem" style="display:none;">
+                            <a class="nav-link text-white" href="#/admin">Admin</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link text-white" href="#" id="logoutBtn">Déconnexion</a>
                         </li>
@@ -41,18 +44,25 @@ export function initNavbar(selector = 'header', isLoginPage = false) {
     if (headerElement) {
         headerElement.innerHTML = createNavbar(isLoginPage);
         if (!isLoginPage) {
+            import('../API/currentUser.js').then(async ({ getCurrentUser }) => {
+                const currentUser = await getCurrentUser();
+                if (currentUser && currentUser.roleId === 1) {
+                    const adminNavItem = document.getElementById('adminNavItem');
+                    if (adminNavItem) adminNavItem.style.display = '';
+                }
+            });
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                        logoutBtn.addEventListener('click', async (e) => {
-                            e.preventDefault();
-                            try {
-                                const { logout } = await import('../API/auth.js');
-                                await logout();
-                            } catch (err) {
-                                console.error('Erreur lors de la déconnexion', err);
-                            }
-                            window.location.href = 'index.html';
-                        });
+                logoutBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const { logout } = await import('../API/auth.js');
+                        await logout();
+                    } catch (err) {
+                        console.error('Erreur lors de la déconnexion', err);
+                    }
+                    window.location.href = 'index.html';
+                });
             }
         }
     }
