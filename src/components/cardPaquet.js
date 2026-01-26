@@ -2,11 +2,11 @@ import { fetchOnePaquet, deletePaquet } from '../API/paquet.js';
 import { fetchAllStatus } from '../API/status.js';
 
 const STATUS_COLORS = {
-	INEXISTANT: 'secondary',
+	INEXISTANT: 'dark',
 	NON_ENVOYE: 'secondary',
 	ENVOI_OK: 'success',
 	ENVOI_EN_COURS: 'primary',
-	ENVOI_EN_ERREUR: 'warning'
+	ENVOI_EN_ERREUR: 'danger'
 };
 
 let STATUS_CACHE = null;
