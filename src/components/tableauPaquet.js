@@ -1,6 +1,5 @@
 import { fetchAllPaquets } from '../API/paquet.js';
 import { fetchAllCorpus } from '../API/corpus.js';
-import { fetchAllStatus } from '../API/status.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
@@ -66,7 +65,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         <div id="tableau-paquet-scroll" style="overflow-x:auto;">
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
                 <thead>
-                    <tr>
+                                    <tr>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Nom de dossier</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Cote</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Corpus</th>
@@ -98,34 +97,15 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     setTableScroll(mq);
     mq.addEventListener('change', setTableScroll);
 
-    const [corpusResult, paquetsResult, statusResult] = await Promise.all([
-        fetchAllCorpus(),
-        fetchAllPaquets(),
-        fetchAllStatus()
-    ]);
+    const [corpusResult, paquetsResult] = await Promise.all([fetchAllCorpus(), fetchAllPaquets()]);
     const corpusList = corpusResult?.data || corpusResult;
     const paquets = paquetsResult?.data || paquetsResult;
-    if (!paquets || !Array.isArray(paquets) || !corpusList || !Array.isArray(corpusList) || !statusResult || !Array.isArray(statusResult)) {
-        conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets, corpus ou statuts.</div>';
+    if (!paquets || !Array.isArray(paquets) || !corpusList || !Array.isArray(corpusList)) {
+        conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets ou des corpus.</div>';
         return;
     }
     const corpusDict = {};
     corpusList.forEach(c => { corpusDict[c.idcorpus || c.idCorpus] = c.name_corpus || c.nameCorpus; });
-
-    const statusColors = {
-        1: 'bg-dark',         // INEXISTANT
-        2: 'bg-secondary',    // NON_ENVOYE
-        3: 'bg-success',      // ENVOI_OK
-        4: 'bg-primary',      // ENVOI_EN_COURS
-        5: 'bg-danger',       // ENVOI_EN_ERREUR
-    };
-    const statusDict = {};
-    statusResult.forEach(s => {
-        statusDict[s.idstatus || s.idStatus] = {
-            name: s.name_status || s.nameStatus,
-            color: statusColors[s.idstatus || s.idStatus] || 'bg-secondary'
-        };
-    });
 
     await loadDataTablesOnce();
 
@@ -143,12 +123,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             { data: 'cote', render: v => v || '-' },
             { data: 'corpusId', render: v => corpusDict[v] || '-' },
             { data: 'commentaire', className: 'commentaire', render: v => `<span title="${v || ''}">${v || '-'}</span>` },
-            { data: 'filedSip', render: v => v ? '<span class="badge bg-primary">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
-            { data: 'statusId', render: (v) => {
-                let s = statusDict[v];
-                if (!s) s = statusDict[1]; 
-                return `<span class="badge ${s.color}">${s.name}</span>`;
-            } },
+            { data: 'filedSip', render: v => v ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>' },
+            { data: 'envoye', render: v => `<input type="checkbox" class="form-check-input" ${v ? 'checked' : ''} disabled>` },
             { data: 'toDo', render: (v, type, row, meta) =>
                 `<input type="checkbox" class="form-check-input toDo-checkbox" data-paquet-idx="${meta.row}" ${v ? 'checked' : ''}>`
             },
