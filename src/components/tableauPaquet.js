@@ -55,7 +55,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.head.appendChild(style);
     }
 
-    // HTML du tableau
     conteneur.innerHTML = `
     <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
         <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2">
@@ -170,10 +169,13 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 const pageInputWrap = document.createElement('div');
                 pageInputWrap.style.display = 'flex';
                 pageInputWrap.style.alignItems = 'center';
-                pageInputWrap.style.gap = '0.5em';
+                pageInputWrap.style.gap = '0.2em';
+                pageInputWrap.style.fontSize = '0.85em';
                 const prevBtn = document.createElement('button');
                 prevBtn.type = 'button';
-                prevBtn.className = 'btn btn-outline-secondary btn-sm';
+                prevBtn.className = 'btn btn-outline-secondary btn-xs';
+                prevBtn.style.padding = '2px 6px';
+                prevBtn.style.fontSize = '0.85em';
                 prevBtn.innerHTML = '&#8592;';
                 prevBtn.title = 'Page précédente';
                 prevBtn.onclick = () => {
@@ -182,19 +184,27 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 };
                 const nextBtn = document.createElement('button');
                 nextBtn.type = 'button';
-                nextBtn.className = 'btn btn-outline-secondary btn-sm';
+                nextBtn.className = 'btn btn-outline-secondary btn-xs';
+                nextBtn.style.padding = '2px 6px';
+                nextBtn.style.fontSize = '0.85em';
                 nextBtn.innerHTML = '&#8594;';
                 nextBtn.title = 'Page suivante';
                 nextBtn.onclick = () => {
                     let pageNum = table.page();
                     if (pageNum < table.page.info().pages - 1) table.page(pageNum + 1).draw('page');
                 };
-                const label = document.createElement('label'); label.textContent = 'Page :'; label.style.margin = 0;
+                const label = document.createElement('label');
+                label.textContent = 'Page :';
+                label.style.margin = 0;
+                label.style.fontSize = '0.85em';
                 const pageInput = document.createElement('input');
                 pageInput.type = 'number';
                 pageInput.min = 1;
                 pageInput.value = table.page() + 1;
-                pageInput.style.width = '60px';
+                pageInput.style.width = '38px';
+                pageInput.style.height = '24px';
+                pageInput.style.fontSize = '0.85em';
+                pageInput.style.padding = '2px 4px';
                 pageInput.className = 'form-control';
                 pageInput.style.MozAppearance = 'textfield';
                 pageInput.style.WebkitAppearance = 'none';
@@ -207,7 +217,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 });
                 const totalPagesSpan = document.createElement('span');
                 totalPagesSpan.textContent = `/ ${table.page.info().pages}`;
-                totalPagesSpan.style.marginLeft = '0.25em';
+                totalPagesSpan.style.marginLeft = '0.15em';
+                totalPagesSpan.style.fontSize = '0.85em';
                 pageInputWrap.appendChild(prevBtn);
                 pageInputWrap.appendChild(label);
                 pageInputWrap.appendChild(pageInput);

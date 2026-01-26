@@ -179,31 +179,41 @@ export function afficherCardPaquetAddModal() {
 		overlay.remove();
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
-			const refreshTableaux = async () => {
-				if (window.afficherTableauPaquet) {
-					window.afficherTableauPaquet('tableau-paquet-conteneur');
-				} else {
-					try {
-						const module = await import('../tableauPaquet.js');
-						if (module && typeof module.afficherTableauPaquet === 'function') {
-							module.afficherTableauPaquet('tableau-paquet-conteneur');
-						} else if (window.reloadTableauPaquet) {
-							window.reloadTableauPaquet();
-						}
-					} catch (e) {}
-				}
-				try {
-					let toDoFn = window.afficherTableauToDoPaquet;
-					if (!toDoFn) {
-						const toDoModule = await import('../toDo.js');
-						toDoFn = toDoModule.afficherTableauToDoPaquet;
-					}
-					if (typeof toDoFn === 'function') {
-						toDoFn('to-do-paquet-conteneur');
-					}
-				} catch (e) {}
-			};
-			refreshTableaux();
+			   const refreshTableaux = async () => {
+				   if (window.afficherTableauPaquet) {
+					   window.afficherTableauPaquet('tableau-paquet-conteneur');
+				   } else {
+					   try {
+						   const module = await import('../tableauPaquet.js');
+						   if (module && typeof module.afficherTableauPaquet === 'function') {
+							   module.afficherTableauPaquet('tableau-paquet-conteneur');
+						   } else if (window.reloadTableauPaquet) {
+							   window.reloadTableauPaquet();
+						   }
+					   } catch (e) {}
+				   }
+				   try {
+					   let toDoFn = window.afficherTableauToDoPaquet;
+					   if (!toDoFn) {
+						   const toDoModule = await import('../toDo.js');
+						   toDoFn = toDoModule.afficherTableauToDoPaquet;
+					   }
+					   if (typeof toDoFn === 'function') {
+						   toDoFn('to-do-paquet-conteneur');
+					   }
+				   } catch (e) {}
+				   try {
+					   let sendErrorFn = window.afficherSendErrorPaquet;
+					   if (!sendErrorFn) {
+						   const sendErrorModule = await import('../sendError.js');
+						   sendErrorFn = sendErrorModule.afficherSendErrorPaquet;
+					   }
+					   if (typeof sendErrorFn === 'function') {
+						   sendErrorFn('send-error-paquet-conteneur');
+					   }
+				   } catch (e) {}
+			   };
+			   refreshTableaux();
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {

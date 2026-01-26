@@ -168,16 +168,22 @@ export function afficherCardPaquetEditModal(paquet) {
 			res = null;
 		}
 		overlay.remove();
-		if (res && (res.success || res.status === 'success')) {
-			showPopup('Le paquet a bien été modifié.', true);
-			if (window.$ && window.$.fn && window.$.fn.DataTable) {
-				const oldTable = window.$('#tableau-paquet');
-				if (oldTable.length && oldTable.hasClass('dataTable')) {
-					oldTable.DataTable().destroy();
-				}
-			}
-			afficherTableauPaquet('tableau-paquet-conteneur');
-		} else if (res && res.fields) {
+			   if (res && (res.success || res.status === 'success')) {
+				   showPopup('Le paquet a bien été modifié.', true);
+				   if (window.$ && window.$.fn && window.$.fn.DataTable) {
+					   const oldTable = window.$('#tableau-paquet');
+					   if (oldTable.length && oldTable.hasClass('dataTable')) {
+						   oldTable.DataTable().destroy();
+					   }
+				   }
+				   afficherTableauPaquet('tableau-paquet-conteneur');
+				   if (window.afficherTableauToDoPaquet) {
+					   window.afficherTableauToDoPaquet('to-do-paquet-conteneur');
+				   }
+				   if (window.afficherSendErrorPaquet) {
+					   window.afficherSendErrorPaquet('send-error-paquet-conteneur');
+				   }
+			   } else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {
 			showPopup(res.message, false);
