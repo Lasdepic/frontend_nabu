@@ -12,9 +12,9 @@ export default function loginPage() {
 		<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background: #F8F9FA);">
 			<div class="card p-5 shadow-lg animate__animated animate__fadeIn" style="min-width: 400px; max-width: 500px; border-radius: 16px; margin-bottom: 20vh">
 				<div class="text-center mb-4">
-					<img src="public/image/favicon.ico" alt="Logo" style="width: 110px; height: 80px; margin-bottom: 10px;">
-					<h2 class="mb-1" style="color: #343A40; font-family: 'Cormorant Garamond', serif;">Connexion</h2>
-					<p class="text-muted fw-semibold mb-2" style="font-size: 1rem;">Numérisation Archive Bibliothèque Universitaire</p>
+					<img src="public/image/favicon.ico" alt="Logo" style="width: 200px; height: 200px;">
+					<h2  style="color: #343A40; font-family: 'Cormorant Garamond', serif;">Connexion</h2>
+					<p class="text-muted fw-semibold mb-2" style="font-size: 1rem;">Numérisation Archivage Bibliothèque Universitaire</p>
 				</div>
 				<form id="loginForm" autocomplete="on" style="margin-top: -10px;">
 					<div class="mb-3">
