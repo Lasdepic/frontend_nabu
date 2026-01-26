@@ -253,3 +253,5 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
     });
 }
+
+window.afficherTableauPaquet = afficherTableauPaquet;
