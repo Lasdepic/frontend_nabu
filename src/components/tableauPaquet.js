@@ -66,14 +66,14 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
                 <thead>
                     <tr>
-                        <th style="background:#212529;color:#fff;">Nom de dossier</th>
-                        <th style="background:#212529;color:#fff;">Cote</th>
-                        <th style="background:#212529;color:#fff;">Corpus</th>
-                        <th style="background:#212529;color:#fff;">Commentaire</th>
-                        <th style="background:#212529;color:#fff;">Déposé en SIP</th>
-                        <th style="background:#212529;color:#fff;">Status</th>
-                        <th style="background:#212529;color:#fff;">À faire</th>
-                        <th class="d-none" style="background:#212529;color:#fff;">DateTri</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Nom de dossier</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Cote</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Corpus</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Commentaire</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Déposé en SIP</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Status</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">À faire</th>
+                        <th class="d-none" style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">DateTri</th>
                     </tr>
                 </thead>
                 <tbody></
