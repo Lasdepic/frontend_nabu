@@ -116,11 +116,11 @@ export default function accueilPage() {
     ======================= */
     // Expose la fonction ToDo sur window pour le rafraîchissement global
     window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
+    window.afficherSendErrorPaquet = afficherSendErrorPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
 
-        // ✅ On vide le conteneur avant d'afficher le tableau
         const tableauConteneur = document.getElementById('tableau-paquet-conteneur');
         tableauConteneur.innerHTML = '';
 

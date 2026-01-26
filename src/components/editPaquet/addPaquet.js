@@ -114,14 +114,9 @@ export function afficherCardPaquetAddModal() {
 		<input type="hidden" name="lastmodifDate" value="${new Date().toISOString().slice(0, 19).replace('T', ' ')}">
 	`;
 
-	// Modal footer (empty, but could be used)
-	// const modalFooter = document.createElement('div');
-	// modalFooter.className = 'modal-footer';
-
 	// Assemble modal
 	modalContent.appendChild(modalHeader);
 	modalContent.appendChild(form);
-	// modalContent.appendChild(modalFooter);
 	modal.appendChild(modalContent);
 	overlay.appendChild(modal);
 
@@ -137,13 +132,11 @@ export function afficherCardPaquetAddModal() {
 			const corpusSelector = selectCorpus();
 			corpusContainer.appendChild(corpusSelector);
 		}
-
 		const typeDocContainer = form.querySelector('#type-document-select-container');
 		if (typeDocContainer) {
 			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId' });
 			typeDocContainer.appendChild(typeDocSelectorWrapper);
 		}
-
 		const statusContainer = form.querySelector('#status-select-container');
 		if (statusContainer) {
 			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId' });
@@ -155,48 +148,38 @@ export function afficherCardPaquetAddModal() {
 		e.preventDefault();
 		const formData = new FormData(form);
 		const data = Object.fromEntries(formData.entries());
-		// Gestion des booléens
 		data.toDo = !!form.querySelector('[name="toDo"]').checked;
 		data.facileTest = !!form.querySelector('[name="facileTest"]').checked;
 		data.filedSip = !!form.querySelector('[name="filedSip"]').checked;
-		// CorpusId
 		const selectCorpusEl = form.querySelector('#corpus-select-container select');
 		if (selectCorpusEl && selectCorpusEl.value) {
 			data.corpusId = selectCorpusEl.value;
 		} else {
 			delete data.corpusId;
 		}
-		// TypeDocumentId
 		const selectTypeDocEl = form.querySelector('#type-document-select-container select');
 		if (selectTypeDocEl && selectTypeDocEl.value) {
 			data.typeDocumentId = selectTypeDocEl.value;
 		} else {
 			data.typeDocumentId = null;
 		}
-		// StatusId
 		const selectStatusEl = form.querySelector('#status-select-container select');
 		if (selectStatusEl && selectStatusEl.value) {
 			data.statusId = selectStatusEl.value;
 		} else {
 			delete data.statusId;
 		}
-		// Commentaire
 		data.commentaire = data.comment;
 		delete data.comment;
-		// Vérification des champs obligatoires
 		if (!data.folderName || !data.cote) {
 			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;
 		}
-		// Appel API
 		const res = await createPaquet(data);
-		// Fermer la modale
 		overlay.remove();
-		// Afficher une popup de succès ou d'erreur
 		if (res && (res.success || res.status === 'success')) {
 			showPopup('Le paquet a bien été enregistré.', true);
-			   // Rafraîchir le tableau des paquets de façon robuste
-			   const refreshTableau = async () => {
+			   const refreshTableaux = async () => {
 				   if (window.afficherTableauPaquet) {
 					   window.afficherTableauPaquet('tableau-paquet-conteneur');
 				   } else {
@@ -207,12 +190,30 @@ export function afficherCardPaquetAddModal() {
 						   } else if (window.reloadTableauPaquet) {
 							   window.reloadTableauPaquet();
 						   }
-					   } catch (e) {
-						   // Optionnel : afficher une erreur ou log
-					   }
+					   } catch (e) {}
 				   }
+				   try {
+					   let toDoFn = window.afficherTableauToDoPaquet;
+					   if (!toDoFn) {
+						   const toDoModule = await import('../toDo.js');
+						   toDoFn = toDoModule.afficherTableauToDoPaquet;
+					   }
+					   if (typeof toDoFn === 'function') {
+						   toDoFn('to-do-paquet-conteneur');
+					   }
+				   } catch (e) {}
+				   try {
+					   let sendErrorFn = window.afficherSendErrorPaquet;
+					   if (!sendErrorFn) {
+						   const sendErrorModule = await import('../sendError.js');
+						   sendErrorFn = sendErrorModule.afficherSendErrorPaquet;
+					   }
+					   if (typeof sendErrorFn === 'function') {
+						   sendErrorFn('send-error-paquet-conteneur');
+					   }
+				   } catch (e) {}
 			   };
-			   refreshTableau();
+			   refreshTableaux();
 		} else if (res && res.fields) {
 			showPopup('Champs manquants : ' + res.fields.join(', '), false);
 		} else if (res && res.message) {
@@ -222,7 +223,6 @@ export function afficherCardPaquetAddModal() {
 		}
 	});
 
-	// Fonction pour afficher une popup Bootstrap
 	function showPopup(message, success = true) {
 		const popup = document.createElement('div');
 		popup.className = `alert ${success ? 'alert-success' : 'alert-danger'} position-fixed top-0 start-50 translate-middle-x mt-3 shadow`;

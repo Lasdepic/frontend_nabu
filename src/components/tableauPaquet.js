@@ -4,9 +4,7 @@ import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
 
-// Promesse globale pour charger DataTables une seule fois
 let dataTablesLoader = null;
-
 function loadDataTablesOnce() {
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
         return Promise.resolve();
@@ -36,48 +34,27 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.body.appendChild(conteneur);
     }
 
-    // Détruire l'ancienne instance DataTable si elle existe
     if (window.$ && window.$.fn && window.$.fn.DataTable) {
-        const oldTable = window.$('#tableau-paquet');
-        if (oldTable.length && oldTable.hasClass('dataTable')) {
-            oldTable.DataTable().destroy();
+        if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
+            $('#tableau-paquet').DataTable().destroy();
         }
     }
 
-    // Ajouter style du tableau
     if (!document.getElementById('tableau-paquet-style')) {
         const style = document.createElement('style');
         style.id = 'tableau-paquet-style';
         style.innerHTML = `
-            #tableau-paquet {
-                border-collapse: collapse;
-                table-layout: fixed;
-                width: 100%;
-            }
-            #tableau-paquet th, #tableau-paquet td {
-                border: none;
-                border-bottom: 1px solid #343A40;
-                text-align: center !important;
-                vertical-align: middle !important;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            #tableau-paquet thead th {
-                border-bottom: 2px solid #343A40;
-                background-color: #212529;
-                color: #fff;
-            }
+            #tableau-paquet { border-collapse: collapse; table-layout: fixed; width: 100%; }
+            #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid #343A40; text-align: center !important; vertical-align: middle !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #tableau-paquet thead th { border-bottom: 2px solid #343A40; background-color: #212529; color: #fff; }
             #tableau-paquet td.folderName { max-width: 150px; }
             #tableau-paquet td.commentaire { max-width: 250px; }
             #tableau-paquet td { line-height: 1.5em; }
-            /* Tooltip sur texte tronqué */
             #tableau-paquet td:hover { cursor: default; }
         `;
         document.head.appendChild(style);
     }
 
-    // HTML du tableau
     conteneur.innerHTML = `
     <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
         <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2">
@@ -104,7 +81,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         </div>
     </div>`;
 
-    // Filtre par date
     const dateFilterCol = conteneur.querySelector('#tableau-paquet-date-filter-col');
     let sortOrder = 'desc';
     if (dateFilterCol) {
@@ -115,27 +91,22 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         dateFilterCol.appendChild(dateFilter);
     }
 
-    // Scroll responsive
     const scrollDiv = conteneur.querySelector('#tableau-paquet-scroll');
     const mq = window.matchMedia('(max-width: 991.98px)');
     function setTableScroll(e) { scrollDiv.style.overflowX = e.matches ? 'auto' : 'unset'; }
     setTableScroll(mq);
     mq.addEventListener('change', setTableScroll);
 
-    // Charger paquets et corpus
     const [corpusResult, paquetsResult] = await Promise.all([fetchAllCorpus(), fetchAllPaquets()]);
     const corpusList = corpusResult?.data || corpusResult;
     const paquets = paquetsResult?.data || paquetsResult;
-
     if (!paquets || !Array.isArray(paquets) || !corpusList || !Array.isArray(corpusList)) {
         conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets ou des corpus.</div>';
         return;
     }
-
     const corpusDict = {};
     corpusList.forEach(c => { corpusDict[c.idcorpus || c.idCorpus] = c.name_corpus || c.nameCorpus; });
 
-    // Attendre DataTables
     await loadDataTablesOnce();
 
     const filteredPaquets = filterCorpusId
@@ -168,16 +139,15 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
     });
 
-    // Ajouter les boutons et custom pagination
+    let filterMoved = false;
     function addPaquetAndCustomPagination() {
         const lengthCol = document.getElementById('tableau-paquet-length-col');
         const filterCol = document.getElementById('tableau-paquet-filter-col');
         const dataTablesLength = document.querySelector('.dataTables_length');
         const dataTablesFilter = document.querySelector('.dataTables_filter');
         const dataTablesPaginate = document.querySelector('.dataTables_paginate');
-
         if (lengthCol && dataTablesLength) { lengthCol.innerHTML = ''; lengthCol.appendChild(dataTablesLength); }
-        if (filterCol && dataTablesFilter) {
+        if (filterCol && dataTablesFilter && !filterMoved) {
             filterCol.innerHTML = '';
             filterCol.appendChild(dataTablesFilter);
             dataTablesFilter.style.width = '100%';
@@ -191,19 +161,21 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 btn.addEventListener('click', (e) => { e.preventDefault(); afficherCardPaquetAddModal(); });
                 filterCol.appendChild(btn);
             }
+            filterMoved = true;
         }
-
         if (dataTablesPaginate) {
-            // Masquer la pagination personnalisée si une seule page
             if (table.page.info().pages > 1) {
                 dataTablesPaginate.innerHTML = '';
                 const pageInputWrap = document.createElement('div');
                 pageInputWrap.style.display = 'flex';
                 pageInputWrap.style.alignItems = 'center';
-                pageInputWrap.style.gap = '0.5em';
+                pageInputWrap.style.gap = '0.2em';
+                pageInputWrap.style.fontSize = '0.85em';
                 const prevBtn = document.createElement('button');
                 prevBtn.type = 'button';
-                prevBtn.className = 'btn btn-outline-secondary btn-sm';
+                prevBtn.className = 'btn btn-outline-secondary btn-xs';
+                prevBtn.style.padding = '2px 6px';
+                prevBtn.style.fontSize = '0.85em';
                 prevBtn.innerHTML = '&#8592;';
                 prevBtn.title = 'Page précédente';
                 prevBtn.onclick = () => {
@@ -212,19 +184,27 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 };
                 const nextBtn = document.createElement('button');
                 nextBtn.type = 'button';
-                nextBtn.className = 'btn btn-outline-secondary btn-sm';
+                nextBtn.className = 'btn btn-outline-secondary btn-xs';
+                nextBtn.style.padding = '2px 6px';
+                nextBtn.style.fontSize = '0.85em';
                 nextBtn.innerHTML = '&#8594;';
                 nextBtn.title = 'Page suivante';
                 nextBtn.onclick = () => {
                     let pageNum = table.page();
                     if (pageNum < table.page.info().pages - 1) table.page(pageNum + 1).draw('page');
                 };
-                const label = document.createElement('label'); label.textContent = 'Page :'; label.style.margin = 0;
+                const label = document.createElement('label');
+                label.textContent = 'Page :';
+                label.style.margin = 0;
+                label.style.fontSize = '0.85em';
                 const pageInput = document.createElement('input');
                 pageInput.type = 'number';
                 pageInput.min = 1;
                 pageInput.value = table.page() + 1;
-                pageInput.style.width = '60px';
+                pageInput.style.width = '38px';
+                pageInput.style.height = '24px';
+                pageInput.style.fontSize = '0.85em';
+                pageInput.style.padding = '2px 4px';
                 pageInput.className = 'form-control';
                 pageInput.style.MozAppearance = 'textfield';
                 pageInput.style.WebkitAppearance = 'none';
@@ -237,7 +217,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 });
                 const totalPagesSpan = document.createElement('span');
                 totalPagesSpan.textContent = `/ ${table.page.info().pages}`;
-                totalPagesSpan.style.marginLeft = '0.25em';
+                totalPagesSpan.style.marginLeft = '0.15em';
+                totalPagesSpan.style.fontSize = '0.85em';
                 pageInputWrap.appendChild(prevBtn);
                 pageInputWrap.appendChild(label);
                 pageInputWrap.appendChild(pageInput);
@@ -252,14 +233,11 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     setTimeout(addPaquetAndCustomPagination, 100);
     table.on('draw', function() { setTimeout(addPaquetAndCustomPagination, 0); });
 
-    // Click ligne pour modal
     $('#tableau-paquet tbody').on('click', 'tr', function(e) {
         if (e.target.classList.contains('toDo-checkbox')) return;
         const data = table.row(this).data();
         afficherCardPaquetModal(data);
     });
-
-    // Gestion checkbox ToDo
     $('#tableau-paquet tbody').on('change', '.toDo-checkbox', async function() {
         const idx = $(this).data('paquet-idx');
         const paquet = table.row(idx).data();
