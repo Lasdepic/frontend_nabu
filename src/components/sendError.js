@@ -76,9 +76,13 @@ export async function afficherSendErrorPaquet(conteneurId = 'to-do-paquet-conten
             const pagination = document.createElement('div');
             pagination.className = 'pagination-paquet d-flex justify-content-center align-items-center mt-2';
             const prevBtn = document.createElement('button');
-            prevBtn.className = 'btn btn-sm btn-outline-secondary mx-1';;
+            prevBtn.className = 'btn btn-sm btn-outline-secondary mx-1';
             prevBtn.textContent = '<';
             prevBtn.disabled = page === 1;
+            prevBtn.style.padding = '0.15rem 0.4rem';
+            prevBtn.style.fontSize = '0.75rem';
+            prevBtn.style.height = '1.5rem';
+            prevBtn.style.minWidth = '1.5rem';
             prevBtn.onclick = () => {
                 if (currentPage > 1) {
                     currentPage--;
@@ -91,9 +95,13 @@ export async function afficherSendErrorPaquet(conteneurId = 'to-do-paquet-conten
             pageInfo.textContent = `Page ${page} / ${totalPages}`;
 
             const nextBtn = document.createElement('button');
-            nextBtn.className = 'btn btn-sm btn-outline-secondary mx-1';;
+            nextBtn.className = 'btn btn-sm btn-outline-secondary mx-1';
             nextBtn.textContent = '>';
             nextBtn.disabled = page === totalPages;
+            nextBtn.style.padding = '0.15rem 0.4rem';
+            nextBtn.style.fontSize = '0.75rem';
+            nextBtn.style.height = '1.5rem';
+            nextBtn.style.minWidth = '1.5rem';
             nextBtn.onclick = () => {
                 if (currentPage < totalPages) {
                     currentPage++;
