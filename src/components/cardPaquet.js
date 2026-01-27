@@ -83,13 +83,14 @@ export async function afficherCardPaquetModal(paquet) {
 }
 
 export async function createCardPaquet(paquet) {
-	       const status = await getStatusById(paquet.statusId);
-	       const card = document.createElement('div');
-	       card.className = 'card shadow border-0';
-	       const userRole = localStorage.getItem('userRole');
-	       const isDeleteVisible = userRole === 'admin' && status?.nameStatus !== 'ENVOI_OK';
-	       const showHistoriqueBtn = status?.nameStatus === 'ENVOI_OK';
-	       card.innerHTML = `
+		const status = await getStatusById(paquet.statusId);
+		const card = document.createElement('div');
+		card.className = 'card shadow border-0';
+		const userRole = localStorage.getItem('userRole');
+		// Le bouton supprimer n'est visible que pour l'admin et si le status n'est pas ENVOI_OK
+		const isDeleteVisible = userRole === 'admin' && status?.nameStatus !== 'ENVOI_OK';
+		// Le bouton historique est toujours visible
+		card.innerHTML = `
 		       <div class="card-body">
 			       <ul class="list-group list-group-flush mb-3">
 				       <li class="list-group-item"><strong>Dossier :</strong> ${paquet.folderName ?? ''}</li>
@@ -101,20 +102,29 @@ export async function createCardPaquet(paquet) {
 				       <li class="list-group-item"><strong>Status :</strong> ${createStatusBadge(status)}</li>
 				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
 			       </ul>
-			       <div class="row mb-3 text-center">
-				       <div class="col"><input type="checkbox" disabled ${paquet.toDo ? 'checked' : ''}> À faire</div>
-				       <div class="col"><input type="checkbox" disabled ${paquet.facileTest ? 'checked' : ''}> Multi-volume</div>
-				       <div class="col"><input type="checkbox" disabled ${paquet.filedSip ? 'checked' : ''}> SIP</div>
-			       </div>
+					       <div class="row mb-3 text-center">
+						       <div class="col d-flex flex-column align-items-center">
+							       <span>À faire</span>
+							       <span class="badge bg-${paquet.toDo ? 'success' : 'secondary'} mt-1">${paquet.toDo ? 'Oui' : 'Non'}</span>
+						       </div>
+						       <div class="col d-flex flex-column align-items-center">
+							       <span>Multi-volume</span>
+							       <span class="badge bg-${paquet.facileTest ? 'success' : 'secondary'} mt-1">${paquet.facileTest ? 'Oui' : 'Non'}</span>
+						       </div>
+						       <div class="col d-flex flex-column align-items-center">
+							       <span>SIP</span>
+							       <span class="badge bg-${paquet.filedSip ? 'success' : 'secondary'} mt-1">${paquet.filedSip ? 'Oui' : 'Non'}</span>
+						       </div>
+					       </div>
 			       <div class="mb-3">
 				       <strong>Commentaire</strong>
 				       <div class="border rounded p-2 bg-light">${paquet.commentaire ?? ''}</div>
 			       </div>
-			       <div class="d-flex justify-content-center gap-3 flex-wrap">
-				       <button class="btn btn-primary px-4" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
-				       ${isDeleteVisible ? `<button class="btn btn-danger px-4" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
-				       ${showHistoriqueBtn ? `<button class="btn btn-success px-4" id="historique"><i class="bi bi-clock-history"></i> Historique d'envoi</button>` : ''}
-			       </div>
+				  <div class="d-flex justify-content-center gap-3 flex-wrap">
+				   <button class="btn btn-primary px-4" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
+				   ${isDeleteVisible ? `<button class="btn btn-danger px-4" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
+				   <button class="btn btn-success px-4" id="historique"><i class="bi bi-clock-history"></i> Historique d'envoi</button>
+				  </div>
 		       </div>
 	       `;
 	       card.querySelector('#edit').addEventListener('click', async () => {
@@ -125,11 +135,12 @@ export async function createCardPaquet(paquet) {
 	       if (isDeleteVisible) {
 		       card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
 	       }
-	       if (card.querySelector('#historique')) {
-		       card.querySelector('#historique').addEventListener('click', () => {
-			       showToast("Bientôt je pourrais afficher les historiques d'envoi du paquet", true);
-		       });
-	       }
+		       if (card.querySelector('#historique')) {
+			       card.querySelector('#historique').addEventListener('click', async () => {
+				       const { afficherCardHistoriqueEnvoi } = await import('./CardHistoriqueEnvoi.js');
+				       afficherCardHistoriqueEnvoi(paquet.cote);
+			       });
+		       }
 	       return card;
 }
 
