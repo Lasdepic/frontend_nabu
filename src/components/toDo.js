@@ -79,6 +79,10 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 			prevBtn.className = 'btn btn-sm btn-outline-secondary mx-1';
 			prevBtn.textContent = '<';
 			prevBtn.disabled = page === 1;
+			prevBtn.style.padding = '0.15rem 0.4rem';
+			prevBtn.style.fontSize = '0.75rem';
+			prevBtn.style.height = '1.5rem';
+			prevBtn.style.minWidth = '1.5rem';
 			prevBtn.onclick = () => {
 				if (currentPage > 1) {
 					currentPage--;
@@ -94,6 +98,10 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 			nextBtn.className = 'btn btn-sm btn-outline-secondary mx-1';
 			nextBtn.textContent = '>';
 			nextBtn.disabled = page === totalPages;
+			nextBtn.style.padding = '0.15rem 0.4rem';
+			nextBtn.style.fontSize = '0.75rem';
+			nextBtn.style.height = '1.5rem';
+			nextBtn.style.minWidth = '1.5rem';
 			nextBtn.onclick = () => {
 				if (currentPage < totalPages) {
 					currentPage++;
