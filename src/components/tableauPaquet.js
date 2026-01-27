@@ -63,7 +63,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             <div class="col-auto" id="tableau-paquet-date-filter-col"></div>
             <div class="col d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
         </div>
-        <div id="tableau-paquet-scroll" style="overflow-x:auto;">
+        <div id="tableau-paquet-scroll">
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
                 <thead>
                     <tr>
@@ -154,7 +154,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             },
             { data: 'lastmodifDateISO', visible: false }
         ],
-        scrollX: true,
+        // scrollX est géré dynamiquement par le conteneur et le JS responsive
+        // scrollX: true,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         order: [[7, 'desc']],
         language: {
