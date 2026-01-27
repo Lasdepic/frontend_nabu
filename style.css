@@ -3,6 +3,10 @@
 	position: sticky;
 	top: 100px;
 }
+
+html, body {
+	overflow-x: hidden;
+}
 input[type="number"] {
 	text-align: center;
 }
