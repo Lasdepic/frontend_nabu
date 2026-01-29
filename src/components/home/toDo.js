@@ -1,6 +1,6 @@
 
-import { fetchAllPaquets } from '../API/paquet.js';
-import { afficherCardPaquetModal } from './cardPaquet.js';
+import { fetchAllPaquets } from '../../API/paquet/paquet.js';
+import { afficherCardPaquetModal } from '../home/cardPaquet.js';
 
 // Affiche le tableau des paquets à faire 
 export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-conteneur', filterCorpusId = null) {

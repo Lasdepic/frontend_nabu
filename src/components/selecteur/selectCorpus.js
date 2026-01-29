@@ -1,4 +1,4 @@
-import { fetchAllCorpus } from '../../API/corpus.js';
+import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
 let selectedCorpus = null;
 

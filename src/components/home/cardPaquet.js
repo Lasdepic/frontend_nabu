@@ -1,5 +1,5 @@
-import { fetchOnePaquet, deletePaquet } from '../API/paquet.js';
-import { fetchAllStatus } from '../API/status.js';
+import { fetchOnePaquet, deletePaquet } from '../../API/paquet/paquet.js';
+import { fetchAllStatus } from '../../API/paquet/status.js';
 
 const STATUS_COLORS = {
 	INEXISTANT: 'dark',
@@ -129,7 +129,7 @@ export async function createCardPaquet(paquet) {
 	       `;
 	       card.querySelector('#edit').addEventListener('click', async () => {
 		       document.getElementById('paquet-modal-overlay')?.remove();
-		       const { afficherCardPaquetEditModal } = await import('./editPaquet/editPaquet.js');
+		       const { afficherCardPaquetEditModal } = await import('../editPaquet/editPaquet.js');
 		       afficherCardPaquetEditModal(paquet);
 	       });
 	       if (isDeleteVisible) {

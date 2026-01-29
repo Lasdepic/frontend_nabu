@@ -1,4 +1,4 @@
-import API_URL from './config.js';
+import API_URL from '../config/config.js';
 
 // Récupère les infos de l'utilisateur connecté (inclut le rôle)
 export async function getCurrentUser() {

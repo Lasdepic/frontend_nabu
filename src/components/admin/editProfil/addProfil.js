@@ -1,5 +1,5 @@
 
-import { register } from '../../../API/auth.js';
+import { register } from '../../../API/auth/auth.js';
 
 /**
  * Affiche une carte pour créer un nouveau profil utilisateur

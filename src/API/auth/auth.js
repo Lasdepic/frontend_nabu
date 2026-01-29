@@ -1,4 +1,4 @@
-import API_URL from './config.js';
+import API_URL from '../config/config.js';
 // Récupère l'id utilisateur connecté et le stocke dans le localStorage
 export async function storeConnectedUserId() {
 	try {

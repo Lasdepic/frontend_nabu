@@ -1,4 +1,4 @@
-import { fetchOneUser } from '../../API/users.js';
+import { fetchOneUser } from '../../API/users/users.js';
 
 export async function afficherCardProfilConnecte(containerSelector = 'main') {
 	const container = document.querySelector(containerSelector);

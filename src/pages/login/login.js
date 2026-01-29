@@ -76,7 +76,7 @@ export default function loginPage() {
 		const email = document.getElementById('email').value;
 		const password = passwordInput.value;
 		try {
-			const { login } = await import('../../API/auth.js');
+			const { login } = await import('../../API/auth/auth.js');
 			const result = await login(email, password);
 			if (result && (result.success === true || result.authenticated === true)) {
 

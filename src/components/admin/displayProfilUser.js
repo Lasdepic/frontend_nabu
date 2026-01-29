@@ -21,7 +21,7 @@ export function afficherProfilUtilisateur(user) {
 	   if (existingModal) existingModal.remove();
 
 	   // Récupérer le rôle de l'utilisateur courant (admin uniquement peut supprimer)
-	   import('../../API/currentUser.js').then(async ({ getCurrentUser }) => {
+	import('../../API/users/currentUser.js').then(async ({ getCurrentUser }) => {
 		   const currentUser = await getCurrentUser();
 		   const isAdmin = currentUser && currentUser.roleId === 1;
 
