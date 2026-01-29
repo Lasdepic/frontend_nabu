@@ -1,5 +1,5 @@
 
-import { fetchAllStatus } from '../../API/status.js';
+import { fetchAllStatus } from '../../API/paquet/status.js';
 
 export async function createStatusSelector({ id = '', name = '', onChange = null, value = '' } = {}) {
     const select = document.createElement('select');

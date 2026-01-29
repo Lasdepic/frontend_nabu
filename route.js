@@ -1,5 +1,5 @@
-import { isAuthenticated } from './src/API/auth.js';
-import { getCurrentUser } from './src/API/currentUser.js';
+import { isAuthenticated } from './src/API/auth/auth.js';
+import { getCurrentUser } from './src/API/users/currentUser.js';
 
 const routes = {
 	'/': {
