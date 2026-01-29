@@ -1,5 +1,5 @@
 
-import { fetchAllusers } from '../../API/users.js';
+import { fetchAllusers } from '../../API/users/users.js';
 import { afficherProfilUtilisateur } from './displayProfilUser.js';
 import { afficherCardProfilConnecte } from './InformationProfil.js';
 import { afficherModalAjoutProfil } from './editProfil/addProfil.js';

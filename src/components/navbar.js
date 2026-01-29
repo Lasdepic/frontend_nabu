@@ -44,7 +44,7 @@ export function initNavbar(selector = 'header', isLoginPage = false) {
     if (headerElement) {
         headerElement.innerHTML = createNavbar(isLoginPage);
         if (!isLoginPage) {
-            import('../API/currentUser.js').then(async ({ getCurrentUser }) => {
+            import('../API/users/currentUser.js').then(async ({ getCurrentUser }) => {
                 const currentUser = await getCurrentUser();
                 if (currentUser && currentUser.roleId === 1) {
                     const adminNavItem = document.getElementById('adminNavItem');
@@ -56,7 +56,7 @@ export function initNavbar(selector = 'header', isLoginPage = false) {
                 logoutBtn.addEventListener('click', async (e) => {
                     e.preventDefault();
                     try {
-                        const { logout } = await import('../API/auth.js');
+                        const { logout } = await import('../API/auth/auth.js');
                         await logout();
                     } catch (err) {
                         console.error('Erreur lors de la déconnexion', err);

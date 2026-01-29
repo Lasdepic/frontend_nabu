@@ -1,8 +1,8 @@
-import { afficherTableauPaquet } from '../tableauPaquet.js';
+import { afficherTableauPaquet } from '../home/tableauPaquet.js';
 import { selectCorpus } from '../selecteur/selectCorpus.js';
 import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
-import { editPaquet } from '../../API/paquet.js';
+import { editPaquet } from '../../API/paquet/paquet.js';
 
 export function afficherCardPaquetEditModal(paquet) {
 	const oldModal = document.getElementById('paquet-modal-overlay');

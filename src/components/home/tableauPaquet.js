@@ -1,8 +1,8 @@
-import { fetchAllPaquets } from '../API/paquet.js';
-import { fetchAllCorpus } from '../API/corpus.js';
-import { fetchAllStatus } from '../API/status.js';
+import { fetchAllPaquets } from '../../API/paquet/paquet.js';
+import { fetchAllCorpus } from '../../API/paquet/corpus.js';
+import { fetchAllStatus } from '../../API/paquet/status.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
-import { afficherCardPaquetAddModal } from './editPaquet/addPaquet.js';
+import { afficherCardPaquetAddModal } from '../editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
 
 let dataTablesLoader = null;
@@ -268,7 +268,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         const paquet = table.row(idx).data();
         paquet.toDo = this.checked;
         try {
-            const { editPaquet } = await import('../API/paquet.js');
+            const { editPaquet } = await import('../../API/paquet/paquet.js');
             await editPaquet({ ...paquet, toDo: this.checked });
             if (window.afficherTableauToDoPaquet) {
                 window.afficherTableauToDoPaquet('to-do-paquet-conteneur');

@@ -1,5 +1,5 @@
 
-import { fetchAllPaquets } from '../API/paquet.js';
+import { fetchAllPaquets } from '../../API/paquet/paquet.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 
 // Affiche le tableau des paquets à faire 

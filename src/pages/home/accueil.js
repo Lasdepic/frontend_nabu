@@ -1,8 +1,8 @@
 import { selectCorpus } from '../../components/selecteur/selectCorpus.js';
-import { afficherTableauPaquet } from '../../components/tableauPaquet.js';
-import { afficherTableauToDoPaquet } from '../../components/toDo.js';
-import { afficherSendErrorPaquet } from '../../components/sendError.js';
-import API_URL from '../../API/config.js';
+import { afficherTableauPaquet } from '../../components/home/tableauPaquet.js';
+import { afficherTableauToDoPaquet } from '../../components/home/toDo.js';
+import { afficherSendErrorPaquet } from '../../components/home/sendError.js';
+import API_URL from '../../API/config/config.js';
 
 export default function accueilPage() {
 
