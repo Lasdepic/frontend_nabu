@@ -6,7 +6,9 @@ import API_URL from '../../API/config/config.js';
 
 export default function accueilPage() {
 
-    // Vérification utilisateur connecté et stockage du rôle
+    /* =======================
+       AUTH CHECK
+    ======================= */
     fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
         credentials: 'include'
     })
@@ -14,17 +16,19 @@ export default function accueilPage() {
         .then(data => {
             if (data?.authenticated && data?.user?.id) {
                 localStorage.setItem('userId', data.user.id);
-                if (data.user.roleId) {
-                    localStorage.setItem('userRole', data.user.roleId === 1 ? 'admin' : 'user');
-                } else {
-                    localStorage.removeItem('userRole');
-                }
+                localStorage.setItem(
+                    'userRole',
+                    data.user.roleId === 1 ? 'admin' : 'user'
+                );
             } else {
                 localStorage.removeItem('userId');
                 localStorage.removeItem('userRole');
             }
         });
 
+    /* =======================
+       MAIN
+    ======================= */
     let main = document.querySelector('main');
     if (!main) {
         main = document.createElement('main');
@@ -34,9 +38,6 @@ export default function accueilPage() {
     main.className = 'bg-white py-4';
     main.innerHTML = '';
 
-    /* =======================
-       CONTAINER PRINCIPAL
-    ======================= */
     const container = document.createElement('div');
     container.className = 'container';
 
@@ -49,41 +50,40 @@ export default function accueilPage() {
     const selectCol = document.createElement('div');
     selectCol.className = 'col-12 col-md-6 col-lg-4';
 
-    const selectElement = selectCorpus(onCorpusSelect);
-    selectCol.appendChild(selectElement);
+    selectCol.appendChild(selectCorpus(onCorpusSelect));
     selectRow.appendChild(selectCol);
     container.appendChild(selectRow);
 
     /* =======================
-       CONTENU PRINCIPAL
+       CONTENT
     ======================= */
     const contentRow = document.createElement('div');
     contentRow.className = 'row g-4';
 
-    /* ===== Tableau principal ===== */
+    /* ===== TABLEAU ===== */
     const tableauCol = document.createElement('div');
-    tableauCol.className = 'col-12 col-lg-9';
+    tableauCol.className = 'col-12 col-lg-9 order-1';
 
     const tableauCard = document.createElement('div');
     tableauCard.className = 'card shadow-sm h-100';
 
     const tableauBody = document.createElement('div');
-    tableauBody.className = 'card-body';
+    tableauBody.className = 'card-body table-responsive';
     tableauBody.id = 'tableau-paquet-conteneur';
 
     tableauCard.appendChild(tableauBody);
     tableauCol.appendChild(tableauCard);
 
-    /* ===== Colonne droite ===== */
+    /* ===== SIDEBAR ===== */
     const sideColWrapper = document.createElement('div');
-    sideColWrapper.className = 'col-12 col-lg-3';
+    sideColWrapper.className = 'col-12 col-lg-3 order-2';
 
     const sideCol = document.createElement('div');
-    sideCol.className = 'side-fixed';
+    sideCol.className = 'd-flex flex-column gap-4 sticky-lg';
 
     /* ToDo */
     const todoCard = document.createElement('div');
-    todoCard.className = 'card shadow-sm mb-4';
+    todoCard.className = 'card shadow-sm';
 
     const todoBody = document.createElement('div');
     todoBody.className = 'card-body';
@@ -105,30 +105,27 @@ export default function accueilPage() {
     sideCol.appendChild(errorCard);
     sideColWrapper.appendChild(sideCol);
 
-    /* Assemblage */
+    /* ASSEMBLAGE */
     contentRow.appendChild(tableauCol);
     contentRow.appendChild(sideColWrapper);
     container.appendChild(contentRow);
     main.appendChild(container);
 
     /* =======================
-       RENDUS
+       RENDER
     ======================= */
-    // Expose la fonction ToDo sur window pour le rafraîchissement global
     window.afficherTableauToDoPaquet = afficherTableauToDoPaquet;
     window.afficherSendErrorPaquet = afficherSendErrorPaquet;
 
     function onCorpusSelect(selectedCorpus) {
         const id = selectedCorpus ? selectedCorpus.id : null;
 
-        const tableauConteneur = document.getElementById('tableau-paquet-conteneur');
-        tableauConteneur.innerHTML = '';
+        document.getElementById('tableau-paquet-conteneur').innerHTML = '';
 
         afficherTableauPaquet('tableau-paquet-conteneur', id);
         afficherTableauToDoPaquet('to-do-paquet-conteneur', id);
         afficherSendErrorPaquet('send-error-paquet-conteneur', id);
     }
 
-    // Appel initial : on simule une sélection "aucun corpus" pour charger une seule fois
     onCorpusSelect(null);
 }
