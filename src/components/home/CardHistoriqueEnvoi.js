@@ -2,7 +2,7 @@
 // Affiche la liste des historiques d'envoi pour un paquet donné
 
 
-import { fetchAllHistoriqueEnvoi } from '../../API/historiqueEnvoi.js';
+import { fetchAllHistoriqueEnvoi } from '../../API/paquet/historiqueEnvoi.js';
 
 export async function afficherCardHistoriqueEnvoi(paquetCote) {
     const result = await fetchAllHistoriqueEnvoi(paquetCote);
