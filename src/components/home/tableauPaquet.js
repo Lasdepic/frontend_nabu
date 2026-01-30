@@ -118,6 +118,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         3: 'bg-success',      // ENVOI_OK
         4: 'bg-primary',      // ENVOI_EN_COURS
         5: 'bg-danger',       // ENVOI_EN_ERREUR
+        6: 'bg-warning',      // ENVOI_EN_PAUSE
+        7: 'bg-info'          // ENVOI_SCDI_OK
     };
     const statusDict = {};
     statusResult.forEach(s => {

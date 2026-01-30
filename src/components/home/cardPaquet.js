@@ -6,7 +6,9 @@ const STATUS_COLORS = {
 	NON_ENVOYE: 'secondary',
 	ENVOI_OK: 'success',
 	ENVOI_EN_COURS: 'primary',
-	ENVOI_EN_ERREUR: 'danger'
+	ENVOI_EN_ERREUR: 'danger',
+	ENVOI_EN_PAUSE: 'warning', 
+	ENVOI_SCDI_OK: 'info'      
 };
 
 let STATUS_CACHE = null;
@@ -135,12 +137,12 @@ export async function createCardPaquet(paquet) {
 	       if (isDeleteVisible) {
 		       card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
 	       }
-		       if (card.querySelector('#historique')) {
-			       card.querySelector('#historique').addEventListener('click', async () => {
-				       const { afficherCardHistoriqueEnvoi } = await import('./CardHistoriqueEnvoi.js');
-				       afficherCardHistoriqueEnvoi(paquet.cote);
-			       });
-		       }
+			       if (card.querySelector('#historique')) {
+				       card.querySelector('#historique').addEventListener('click', async () => {
+					       const { afficherCardHistoriqueEnvoi } = await import('./CardHistoriqueEnvoi.js');
+					       afficherCardHistoriqueEnvoi(paquet.cote);
+				       });
+			       }
 	       return card;
 }
 
