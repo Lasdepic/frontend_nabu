@@ -51,7 +51,9 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet td.folderName { max-width: 150px; }
             #tableau-paquet td.commentaire { max-width: 250px; }
             #tableau-paquet td { line-height: 1.5em; }
-            #tableau-paquet td:hover { cursor: default; }
+            #tableau-paquet tbody tr { cursor: pointer; }
+            #tableau-paquet tbody tr:hover { background-color: #f5f5f5; }
+            #tableau-paquet td .toDo-checkbox { cursor: pointer; }
         `;
         document.head.appendChild(style);
     }
@@ -72,7 +74,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Corpus</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Commentaire</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Déposé en SIP</th>
-                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Status</th>
+                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Statut</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">À faire</th>
                         <th class="d-none" style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">DateTri</th>
                     </tr>
@@ -156,13 +158,22 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             },
             { data: 'lastmodifDateISO', visible: false }
         ],
-        // scrollX est géré dynamiquement par le conteneur et le JS responsive
-        // scrollX: true,
+
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         order: [[7, 'desc']],
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json',
-            info: `<span class='badge bg-info'><span>nombre de paquet : ${filteredPaquets.length}</span></span>`
+            info: `<span class='badge bg-info'><span>nombre de paquet : <span id='nb-paquet-affiche'>${filteredPaquets.length}</span></span></span>`
+        }
+    });
+
+    table.on('draw', function() {
+        const info = table.page.info();
+        const nbAffiche = info.end - info.start > 0 ? info.end - info.start : 0;
+        const nbTotal = info.recordsDisplay;
+        const span = document.getElementById('nb-paquet-affiche');
+        if (span) {
+            span.textContent = nbTotal;
         }
     });
 
@@ -262,6 +273,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     $('#tableau-paquet tbody').on('click', 'tr', function(e) {
         if (e.target.classList.contains('toDo-checkbox')) return;
+        if (e.target.classList.contains('toDo-checkbox')) {
+            e.target.style.cursor = 'pointer';
+            return;
+        }
         const data = table.row(this).data();
         afficherCardPaquetModal(data);
     });
