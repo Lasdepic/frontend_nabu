@@ -24,8 +24,21 @@ async function initialiserUI() {
 
   try {
     const navbar = await import('../../components/navbar.js');
-    if (navbar?.initNavbar) navbar.initNavbar('header');
+    if (navbar?.initNavbar) await navbar.initNavbar('header');
   } catch {}
+
+  // Vérifier le rôle de l'utilisateur
+  let isAdmin = false;
+  try {
+    const { getCurrentUser } = await import('../../API/users/currentUser.js');
+    const currentUser = await getCurrentUser();
+    if (currentUser && currentUser.roleId === 1) {
+      isAdmin = true;
+    }
+  } catch (e) {
+
+    isAdmin = false;
+  }
 
   const conteneur = document.createElement('div');
   conteneur.className = 'container min-vh-100 d-flex justify-content-center align-items-center py-5';
@@ -38,7 +51,7 @@ async function initialiserUI() {
     <div class="card-header bg-primary text-white text-center py-3">
       <h5 class="mb-0">
         <i class="fa-solid fa-file-zipper me-2"></i>
-        Envoi d’un paquet ZIP vers le CINES
+        Envoi d'un paquet
       </h5>
     </div>
 
@@ -50,15 +63,17 @@ async function initialiserUI() {
           <i class="fa-solid fa-folder-open me-1 text-secondary"></i>
           Fichier ZIP
         </label>
-        <input type="file" id="inputFichier" class="form-control" accept=".zip">
+        <input type="file" id="inputFichier" class="form-control" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
         <div class="form-text">Seuls les fichiers <strong>.zip</strong> sont acceptés.</div>
       </div>
 
       <!-- Bouton -->
-      <button id="btnEnvoyer" class="btn btn-success w-100 fw-semibold mb-4">
+      <button id="btnEnvoyer" class="btn btn-success w-100 fw-semibold mb-4" ${!isAdmin ? 'disabled' : ''}>
         <i class="fa-solid fa-cloud-arrow-up me-2"></i>
         Envoyer le fichier
       </button>
+
+      ${!isAdmin ? `<div class="alert alert-danger text-center">Seuls les administrateurs peuvent envoyer des fichiers.</div>` : ''}
 
       <!-- MD5 local -->
       <div class="mb-4">
@@ -120,7 +135,9 @@ async function initialiserUI() {
   conteneur.appendChild(card);
   document.body.appendChild(conteneur);
 
-  document.getElementById('btnEnvoyer').onclick = gererEnvoi;
+  if (isAdmin) {
+    document.getElementById('btnEnvoyer').onclick = gererEnvoi;
+  }
 }
 
 /* ===============================
@@ -175,7 +192,6 @@ async function gererEnvoi() {
     const { fetchOnePaquet } = await import('../../API/paquet/paquet.js');
     const data = await fetchOnePaquet(cote);
     console.log('[DEBUG] fetchOnePaquet(', cote, ') =>', data);
-    // Correction : la réponse est de la forme { success, data }, il faut vérifier data.data.cote
     if (
       data &&
       data.success &&
@@ -188,7 +204,7 @@ async function gererEnvoi() {
   } catch (e) { console.error('[DEBUG] fetchOnePaquet error', e); }
 
   if (!paquetExiste) {
-    // Afficher une card de confirmation avant l'envoi
+    // card de confirmation avant l'envoi
     const cardOverlay = document.createElement('div');
     cardOverlay.style.position = 'fixed';
     cardOverlay.style.top = 0;
