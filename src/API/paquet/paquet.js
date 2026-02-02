@@ -11,10 +11,11 @@ export async function fetchAllPaquets() {
 	}
 }
 
-// API pour récupéré un paquet
-export async function fetchOnePaquet() {
-    	try {
-		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=display-paquet`);
+// API pour récupérer un paquet par sa cote
+export async function fetchOnePaquet(cote) {
+	try {
+		const url = `${API_URL}/backend_nabu/index.php?action=display-paquet&cote=${encodeURIComponent(cote)}`;
+		const response = await fetch(url);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {

@@ -16,6 +16,11 @@ const routes = {
 		template: () => import('./src/pages/admin/admin.js'),
 		script: './src/pages/admin/admin.js',
 		title: 'Admin'
+	},
+	'/envoi': {
+		template: () => import('./src/pages/download/sendding.js'),
+		script: './src/pages/download/sendding.js',
+		title: 'Envoi de fichier'
 	}
 };
 
