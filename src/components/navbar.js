@@ -26,7 +26,7 @@ export function createNavbar(isLoginPage = false) {
                         <li class="nav-item">
                             <a class="nav-link text-white" href="index.html">Accueil</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item" id="envoiNavItem" style="display:none;">
                             <a class="nav-link text-white" href="#/envoi">Envoi</a>
                         </li>
                         <li class="nav-item" id="adminNavItem" style="display:none;">
@@ -52,6 +52,8 @@ export function initNavbar(selector = 'header', isLoginPage = false) {
                 if (currentUser && currentUser.roleId === 1) {
                     const adminNavItem = document.getElementById('adminNavItem');
                     if (adminNavItem) adminNavItem.style.display = '';
+                    const envoiNavItem = document.getElementById('envoiNavItem');
+                    if (envoiNavItem) envoiNavItem.style.display = '';
                 }
             });
             const logoutBtn = document.getElementById('logoutBtn');
