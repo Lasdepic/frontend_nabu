@@ -1,14 +1,35 @@
 // Mise à jour du statut du paquet
 export async function mettreAJourStatutPaquet(nomFichier, statut) {
-  const cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
+  let cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
+  // Retirer le préfixe SIP_ si présent
+  if (cote.toUpperCase().startsWith('SIP_')) {
+    cote = cote.slice(4);
+  }
   try {
     const modulePaquet = await import('../../API/paquet/paquet.js');
-    if (!modulePaquet?.fetchOnePaquet) return;
+    if (!modulePaquet?.fetchOnePaquet) {
+      console.error('[mettreAJourStatutPaquet] fetchOnePaquet non trouvé');
+      return;
+    }
     const result = await modulePaquet.fetchOnePaquet(cote);
-    const paquet = (result && result.success && result.data) ? result.data : (result && result.cote === cote ? result : null);
-    if (!paquet) return;
+    if (!result || !result.success || !result.data) {
+      console.error(`[mettreAJourStatutPaquet] Paquet non trouvé pour cote: '${cote}'`, result);
+      return;
+    }
+    const paquet = result.data;
     paquet.statusId = statut;
     paquet.statut = statut;
-    if (modulePaquet?.editPaquet) await modulePaquet.editPaquet(paquet);
-  } catch {}
+    if (modulePaquet?.editPaquet) {
+      const resEdit = await modulePaquet.editPaquet(paquet);
+      if (!resEdit || !resEdit.success) {
+        console.error('[mettreAJourStatutPaquet] Echec de la mise à jour du statut', resEdit);
+      } else {
+        console.log('[mettreAJourStatutPaquet] Statut mis à jour avec succès', resEdit);
+      }
+    } else {
+      console.error('[mettreAJourStatutPaquet] editPaquet non trouvé');
+    }
+  } catch (e) {
+    console.error('[mettreAJourStatutPaquet] Exception', e);
+  }
 }

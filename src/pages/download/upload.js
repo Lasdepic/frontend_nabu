@@ -2,7 +2,7 @@
 import { afficherStatus } from './helpersUI.js';
 import { comparerMD5 } from './md5.js';
 
-export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, envoyerFichierAvecRemplacement, mettreAJourStatutPaquet) {
+export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, envoyerFichierAvecRemplacement, mettreAJourStatutPaquet, onUploadProgress) {
   const input = document.getElementById('inputFichier');
   const infoReprise = document.getElementById('infoReprise');
   if (!input || !input.files[0]) return;
@@ -64,7 +64,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
         return;
       }
     } else {
-      // Si pas de md5 dans la réponse, on tente de le récupérer via l'API md5
+      // Si pas de md5 dans la réponse, on récupére via l'API md5
       const input = document.getElementById('inputFichier');
       if (!input || !input.files[0]) {
         afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
@@ -142,19 +142,23 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
   xhr.upload.onprogress = e => {
     const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
     if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
+    if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
   };
   xhr.onerror = () => {
     if (infoReprise) infoReprise.textContent = "";
+    if (typeof onUploadProgress === 'function') onUploadProgress(0);
     afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
   };
   xhr.onload = async () => {
     if (xhr.status >= 200 && xhr.status < 300) {
       if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(100);
       await mettreAJourStatutPaquet(fichier.name, 7); 
       afficherStatus("Paquet envoyé avec succès au serveur.", "success");
       if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     } else {
       if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
       afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
     }
   };

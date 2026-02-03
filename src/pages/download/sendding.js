@@ -1,19 +1,17 @@
-import { afficherSpinner, afficherStatus, chargerFeuilleDeStyle, chargerScript } from './helpersUI.js';
-import { calculerMD5Local, calculerMD5Distant, comparerMD5 } from './md5.js';
+import { afficherStatus, chargerFeuilleDeStyle, chargerScript } from './helpersUI.js';
+import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
+
 
 const URL_API = 'https://vitam.scdi-montpellier.fr:8443/';
 const JETON_API = '800HxwzchfvLh9E8YjXf5UfGDaJ8Iz3UG0v2T7dwDMZByzcsOAfw10uS98rY0RqR';
 
-window.comparerMD5 = comparerMD5;
-window.calculerMD5Distant = () => calculerMD5Distant(URL_API, JETON_API);
 
 
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
-chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
-  .then(initialiserUI);
+chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js').then(initialiserUI);
 
 
 async function initialiserUI() {
@@ -86,6 +84,14 @@ async function initialiserUI() {
         <input id="md5Local" type="hidden">
       </div>
 
+      <!-- Progression upload fichier -->
+      <div class="mb-4">
+        <div class="progress mb-1" style="height:12px;">
+          <div id="uploadProgress" class="progress-bar bg-success" style="width:0%"></div>
+        </div>
+        <small id="uploadProgressTxt" class="text-muted"></small>
+      </div>
+
       <!-- Infos reprise -->
       <div id="infoReprise" class="text-warning small mb-2"></div>
 
@@ -120,44 +126,22 @@ import { createPaquet } from '../../API/paquet/paquet.js';
 
 async function gererEnvoi() {
   const bouton = document.getElementById('btnEnvoyer');
-
-  bouton.disabled = true;
-  bouton.innerHTML = `
-    <span class="spinner-border spinner-border-sm me-2"></span>
-    Envoi en cours…
-  `;
-
-  [
-    'md5DistantSpin',
-    'md5DistantTxt',
-    'md5Distant',
-    'md5LocalSpin',
-    'md5LocalTxt',
-    'md5Local',
-    'concordanceMD5',
-    'infoReprise'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
-
-  afficherStatus('Calcul du MD5 local…', 'secondary');
-
-  // Récupérer le nom du fichier sélectionné
   const inputFichier = document.getElementById('inputFichier');
   const fichier = inputFichier && inputFichier.files && inputFichier.files[0];
   if (!fichier) {
     afficherStatus('Veuillez sélectionner un fichier ZIP.', 'danger');
-    bouton.disabled = false;
-    bouton.innerHTML = `
-      <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-      Envoyer le fichier
-    `;
     return;
   }
-  const nomFichier = fichier.name;
-  const cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
-
+  let nomFichier = fichier.name;
+  // On ajoute SIP_
+  let cote = nomFichier;
+  if (nomFichier.toLowerCase().startsWith('sip_')) {
+    cote = nomFichier.slice(4, nomFichier.length - 4); 
+    cote = cote.endsWith('.zip') ? cote.slice(0, -4) : cote;
+  } else {
+    cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
+    nomFichier = 'SIP_' + cote + '.zip';
+  }
 
   // Vérifier si le paquet existe déjà dans la base avec fetchOnePaquet
   let paquetExiste = false;
@@ -243,15 +227,35 @@ async function gererEnvoi() {
     return;
   }
 
+  // On crée un objet File avec le nom correct si besoin
+  let fichierAEnvoyer = fichier;
+  if (fichier.name !== nomFichier) {
+    // On crée un nouveau File avec le bon nom (SIP_<cote>.zip)
+    try {
+      fichierAEnvoyer = new File([fichier], nomFichier, { type: fichier.type });
+    } catch (e) {
+      // fallback si File non supporté
+      fichierAEnvoyer = fichier;
+    }
+  }
+
   calculerMD5Local()
     .then(() => {
       const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
+      // Ajout du callback de progression
+      const onUploadProgress = (pourcentage) => {
+        const progressBar = document.getElementById('uploadProgress');
+        const progressTxt = document.getElementById('uploadProgressTxt');
+        if (progressBar) progressBar.style.width = pourcentage + '%';
+        if (progressTxt) progressTxt.textContent = pourcentage + '%';
+      };
       envoyerFichier(
         URL_API,
         JETON_API,
         importerCardConfirm,
         envoyerFichierAvecRemplacement,
-        mettreAJourStatutPaquet
+        mettreAJourStatutPaquet,
+        onUploadProgress
       );
     })
     .finally(() => {
@@ -263,10 +267,4 @@ async function gererEnvoi() {
     });
 }
 
-window.EnvoiCinesImmediat = () => {
-  alert('Envoi immédiat déclenché !');
-};
 
-window.EnvoiCinesDiffere = () => {
-  alert('Envoi différé déclenché !');
-};
