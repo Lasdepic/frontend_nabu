@@ -75,25 +75,15 @@ async function initialiserUI() {
 
       ${!isAdmin ? `<div class="alert alert-danger text-center">Seuls les administrateurs peuvent envoyer des fichiers.</div>` : ''}
 
-      <!-- MD5 local -->
+
+      <!-- Progression MD5 local uniquement -->
       <div class="mb-4">
-        <h6 class="fw-bold mb-2">
-          <i class="fa-solid fa-hashtag text-info me-1"></i>
-          Hash MD5 local
-        </h6>
-
-        <div class="input-group mb-2">
-          <span class="input-group-text">
-            <div id="md5LocalSpin" class="spinner-border spinner-border-sm text-info" style="display:none;"></div>
-          </span>
-          <input id="md5Local" class="form-control font-monospace" readonly>
-        </div>
-
-        <div class="progress mb-1" style="height:6px;">
+        <div class="progress mb-1" style="height:12px;">
           <div id="md5LocalProgress" class="progress-bar bg-info" style="width:0%"></div>
         </div>
-
         <small id="md5LocalTxt" class="text-muted"></small>
+        <!-- Champ caché pour stocker le hash local -->
+        <input id="md5Local" type="hidden">
       </div>
 
       <!-- Infos reprise -->
@@ -105,25 +95,8 @@ async function initialiserUI() {
         En attente d’envoi…
       </div>
 
-      <!-- MD5 distant -->
-      <div class="mb-3">
-        <h6 class="fw-bold mb-2">
-          <i class="fa-solid fa-server text-primary me-1"></i>
-          Hash MD5 distant
-        </h6>
-
-        <div class="input-group">
-          <span class="input-group-text">
-            <div id="md5DistantSpin" class="spinner-border spinner-border-sm text-primary" style="display:none;"></div>
-          </span>
-          <input id="md5Distant" class="form-control font-monospace" readonly>
-        </div>
-
-        <small id="md5DistantTxt" class="text-muted"></small>
-      </div>
-
-      <!-- Concordance -->
-      <div id="concordanceMD5" class="mt-3"></div>
+      <!-- Concordance (masqué, mais gardé pour compatibilité éventuelle) -->
+      <div id="concordanceMD5" class="mt-3" style="display:none;"></div>
 
     </div>
 
