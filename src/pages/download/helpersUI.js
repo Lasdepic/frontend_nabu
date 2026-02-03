@@ -8,7 +8,9 @@ export function afficherStatus(message, type = "secondary") {
   const zone = document.getElementById('zoneStatus');
   if (zone) {
     zone.className = `alert alert-${type} text-center mb-3`;
-    zone.innerHTML = `<i class=\"fa-solid fa-info-circle me-2\"></i>${message}`;
+    zone.innerHTML = `<i class='fa-solid fa-info-circle me-2'></i>${message}`;
+    zone.style.display = '';
+    zone.removeAttribute('hidden');
   }
 }
 

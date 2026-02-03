@@ -60,7 +60,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
         });
         return;
       } else if (md5Local && donnees.md5 === md5Local) {
-        afficherStatus("Le paquet existe déjà sur le serveur (MD5 identique).", "warning");
+        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
         return;
       }
     } else {
@@ -116,7 +116,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
         });
         return;
       } else if (md5Local && md5Distant && md5Distant === md5Local) {
-        afficherStatus("Le paquet existe déjà sur le serveur (MD5 identique).", "warning");
+        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
         return;
       } else {
         afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
