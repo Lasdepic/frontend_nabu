@@ -1,3 +1,6 @@
+html.page-sendding, body.page-sendding {
+	overflow-y: hidden !important;
+}
 /* Sticky latéral pour la colonne droite, sans modifier la hauteur ni overflow */
 .side-fixed {
 	position: sticky;
@@ -5,7 +8,11 @@
 }
 
 html, body {
+	height: 100vh;
+	margin: 0;
+	padding: 0;
 	overflow-x: hidden;
+	overflow-y: auto;
 }
 input[type="number"] {
 	text-align: center;

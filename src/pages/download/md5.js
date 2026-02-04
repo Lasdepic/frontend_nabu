@@ -3,16 +3,14 @@ import { afficherSpinner } from './helpersUI.js';
 
 export async function calculerMD5Local() {
   const input = document.getElementById('inputFichier');
-  const md5LocalSpin = document.getElementById('md5LocalSpin');
   const md5LocalTxt = document.getElementById('md5LocalTxt');
-  const md5Local = document.getElementById('md5Local');
   const md5LocalProgress = document.getElementById('md5LocalProgress');
   if (!input || !input.files[0]) return;
   const fichier = input.files[0];
-  afficherSpinner('md5LocalSpin', true);
-  md5LocalTxt.textContent = "Envoi sur le serveur en cours...";
-  md5Local.value = '';
+  if (md5LocalTxt) md5LocalTxt.textContent = "Calcul du hash en cours...";
   if (md5LocalProgress) md5LocalProgress.style.width = '0%';
+  // Récupérer le champ caché pour stocker le hash
+  const md5Local = document.getElementById('md5Local');
   const tailleMorceau = 2 * 1024 * 1024;
   const nombreMorceaux = Math.ceil(fichier.size / tailleMorceau);
   let morceauActuel = 0;
@@ -26,12 +24,12 @@ export async function calculerMD5Local() {
       if (md5LocalProgress) md5LocalProgress.style.width = pourcentage + '%';
       if (morceauActuel < nombreMorceaux) {
         chargerMorceauSuivant();
-        md5LocalTxt.textContent = `Envoi sur le serveur en cours... ${pourcentage}%`;
+        if (md5LocalTxt) md5LocalTxt.textContent = `Calcul du hash en cours... ${pourcentage}%`;
       } else {
         const hash = calculateurMD5.end();
-        afficherSpinner('md5LocalSpin', false);
-        md5LocalTxt.textContent = "";
-        md5Local.value = hash;
+        if (md5LocalTxt) md5LocalTxt.textContent = "";
+        // hash calculé, stocké dans le champ caché (input hidden)
+        if (md5Local) md5Local.value = hash;
         if (md5LocalProgress) md5LocalProgress.style.width = '100%';
         if (typeof window.comparerMD5 === 'function') window.comparerMD5();
         resolve();
@@ -53,23 +51,23 @@ export async function calculerMD5Distant(URL_API, JETON_API) {
   const md5Distant = document.getElementById('md5Distant');
   if (!input || !input.files[0]) return;
   const fichier = input.files[0];
-  afficherSpinner('md5DistantSpin', true);
-  md5DistantTxt.textContent = "Demande en cours...";
-  md5Distant.value = '';
+  if (md5DistantSpin) afficherSpinner('md5DistantSpin', true);
+  if (md5DistantTxt) md5DistantTxt.textContent = "Demande en cours...";
+  if (md5Distant) md5Distant.value = '';
   try {
     const reponse = await fetch(URL_API+'index.php?action=md5', {
       headers: { Authorization: 'Bearer '+JETON_API, 'X-File-Name': fichier.name }
     });
     if (!reponse.ok) throw new Error('Erreur réseau');
     const donnees = await reponse.json();
-    afficherSpinner('md5DistantSpin', false);
-    md5DistantTxt.textContent = "";
-    md5Distant.value = donnees.md5 || "";
+    if (md5DistantSpin) afficherSpinner('md5DistantSpin', false);
+    if (md5DistantTxt) md5DistantTxt.textContent = "";
+    if (md5Distant) md5Distant.value = donnees.md5 || "";
     if (typeof window.comparerMD5 === 'function') window.comparerMD5();
   } catch (e) {
-    afficherSpinner('md5DistantSpin', false);
-    md5DistantTxt.textContent = "Erreur serveur";
-    md5Distant.value = '';
+    if (md5DistantSpin) afficherSpinner('md5DistantSpin', false);
+    if (md5DistantTxt) md5DistantTxt.textContent = "Erreur serveur";
+    if (md5Distant) md5Distant.value = '';
   }
 }
 

@@ -4,7 +4,7 @@ import { createPaquet } from '../../API/paquet/paquet.js';
 import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
 
-export function afficherCardPaquetAddModal() {
+export function afficherCardPaquetAddModal(defaults = {}) {
 
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
@@ -57,7 +57,7 @@ export function afficherCardPaquetAddModal() {
 			<div class="row g-3">
 				<div class="col-md-6">
 					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="folderName" required>
+					<input type="text" class="form-control" name="folderName" required value="${defaults.folderName ? defaults.folderName.replace(/&/g, '&amp;').replace(/</g, '&lt;') : ''}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images autre :</label>
@@ -65,7 +65,7 @@ export function afficherCardPaquetAddModal() {
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="cote" required>
+					<input type="text" class="form-control" name="cote" required value="${defaults.cote ? defaults.cote.replace(/&/g, '&amp;').replace(/</g, '&lt;') : ''}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
