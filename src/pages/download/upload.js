@@ -117,9 +117,11 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
         return;
       } else if (md5Local && md5Distant && md5Distant === md5Local) {
         afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
+        setTimeout(() => window.location.reload(), 3000);
         return;
       } else {
         afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
+        setTimeout(() => window.location.reload(), 3000);
         return;
       }
     }
@@ -130,7 +132,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
   }
   if (decalage >= fichier.size) {
     await mettreAJourStatutPaquet(fichier.name, 7);
-    afficherStatus("Paquet envoyé avec succès au serveur.", "success");
+    afficherStatus(`Le paquet <strong>${fichier.name}</strong> envoyé avec succès au serveur.`, "success");
     if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     return;
   }

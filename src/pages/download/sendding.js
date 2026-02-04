@@ -16,6 +16,7 @@ chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.
 ================================ */
 async function initialiserUI() {
   document.body.innerHTML = '';
+  document.body.classList.add('page-sendding');
 
   const header = document.createElement('header');
   document.body.appendChild(header);
@@ -32,76 +33,81 @@ async function initialiserUI() {
     isAdmin = user?.roleId === 1;
   } catch {}
 
+
   const container = document.createElement('div');
-  container.className = 'container min-vh-100 d-flex justify-content-center align-items-center';
+  container.className = 'container d-flex justify-content-center align-items-center';
+  container.style.height = '100vh';
+  container.style.overflowY = 'hidden';
 
   const card = document.createElement('div');
-  card.className = 'card shadow-lg w-100';
-  card.style.maxWidth = '560px';
+  card.className = 'card border-0 shadow-lg w-100 animate__animated animate__fadeIn';
+  card.style.maxWidth = '600px';
+  card.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%)';
 
   card.innerHTML = `
-    <div id="zoneStatus" class="alert d-none text-center mb-3"></div>
-    <div class="card-header bg-primary text-white text-center py-3">
-      <h4 class="mb-0 fw-semibold">
+    <div class="card-header bg-gradient bg-primary text-white text-center py-4 rounded-top">
+      <h3 class="mb-0 fw-bold">
         <i class="fa-solid fa-file-zipper me-2"></i>
         Envoi d’un paquet ZIP
-      </h4>
+      </h3>
     </div>
 
-    <div class="card-body">
-
-      <div id="etatUpload" class="alert d-none text-center" role="alert"></div>
-
-      <div class="mb-4">
+    <div class="card-body p-0">
+      <div class="mb-4" style="padding: 1.5rem;">
         <label class="form-label fw-semibold">
           <i class="fa-solid fa-folder-open me-1 text-secondary"></i>
           Fichier ZIP
         </label>
-        <input type="file" id="inputFichier" class="form-control" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
-        <div class="form-text">Format accepté : <strong>.zip</strong></div>
+        <input type="file" id="inputFichier" class="form-control form-control-lg border-2" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
+        <div class="form-text">Format accepté : <span class="badge bg-secondary">.zip</span></div>
       </div>
 
-      <button id="btnEnvoyer"
-              class="btn btn-success w-100 fw-semibold mb-4 d-flex justify-content-center align-items-center gap-2"
-              ${!isAdmin ? 'disabled' : ''}>
-        <i class="fa-solid fa-cloud-arrow-up"></i>
-        <span>Envoyer le fichier</span>
-      </button>
+      <div style="padding: 0 1.5rem;">
+        <button id="btnEnvoyer"
+                class="btn btn-success btn-lg w-100 fw-semibold mb-4 d-flex justify-content-center align-items-center gap-2 shadow-sm"
+                style="letter-spacing:0.5px;"
+                ${!isAdmin ? 'disabled' : ''}>
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Envoyer le fichier</span>
+        </button>
 
-      ${!isAdmin ? `
-        <div class="alert alert-danger text-center small">
-          <i class="fa-solid fa-triangle-exclamation me-1"></i>
-          Accès réservé aux administrateurs
-        </div>` : ''}
+        <div id="zoneStatus" class="alert d-none text-center mb-3"></div>
+        <div id="etatUpload" class="alert d-none text-center" role="alert"></div>
 
-      <div class="mb-4">
-        <label class="form-label small fw-semibold text-muted">Empreinte MD5 (local)</label>
-        <div class="progress" style="height:10px;">
-          <div id="md5LocalProgress"
-               class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-               style="width:0%"
-               aria-valuemin="0"
-               aria-valuemax="100"></div>
+        ${!isAdmin ? `
+          <div class="alert alert-danger text-center small rounded-pill px-3 py-2">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            Accès réservé aux administrateurs
+          </div>` : ''}
+
+        <div id="md5LocalContainer" class="mb-4 d-none">
+          <label class="form-label small fw-semibold text-muted">Empreinte MD5 (local)</label>
+          <div class="progress" style="height:10px;">
+            <div id="md5LocalProgress"
+                 class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                 style="width:0%"
+                 aria-valuemin="0"
+                 aria-valuemax="100"></div>
+          </div>
+          <small id="md5LocalTxt" class="text-muted d-block mt-1"></small>
+          <input id="md5Local" type="hidden">
         </div>
-        <small id="md5LocalTxt" class="text-muted d-block mt-1"></small>
-        <input id="md5Local" type="hidden">
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label small fw-semibold text-muted">Envoi vers le serveur</label>
-        <div class="progress" style="height:10px;">
-          <div id="uploadProgress"
-               class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-               style="width:0%"
-               aria-valuemin="0"
-               aria-valuemax="100"></div>
+        <div id="uploadProgressContainer" class="mb-3 d-none">
+          <label class="form-label small fw-semibold text-muted">Envoi vers le serveur</label>
+          <div class="progress" style="height:10px;">
+            <div id="uploadProgress"
+                 class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                 style="width:0%"
+                 aria-valuemin="0"
+                 aria-valuemax="100"></div>
+          </div>
+          <small id="uploadProgressTxt" class="text-muted d-block mt-1"></small>
         </div>
-        <small id="uploadProgressTxt" class="text-muted d-block mt-1"></small>
       </div>
-
     </div>
 
-    <div class="card-footer text-center text-muted small">
+    <div class="card-footer text-center text-muted small rounded-bottom bg-light border-top">
       <i class="fa-solid fa-shield-halved me-1"></i>
       Vérification d’intégrité MD5
     </div>
@@ -147,6 +153,12 @@ async function gererEnvoi() {
   };
 
   try {
+    // Afficher la barre de progression MD5
+    const md5Container = document.getElementById('md5LocalContainer');
+    if (md5Container) md5Container.classList.remove('d-none');
+    // Cacher la barre d'upload au début
+    const uploadContainerInit = document.getElementById('uploadProgressContainer');
+    if (uploadContainerInit) uploadContainerInit.classList.add('d-none');
     // Vérifier si le paquet existe avant de continuer
     const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
     let coteSansPrefix = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
@@ -244,6 +256,7 @@ async function gererEnvoi() {
     }
 
     // MD5
+
     document.getElementById('md5LocalTxt').textContent = 'Calcul MD5 en cours…';
     await calculerMD5Local();
 
@@ -258,10 +271,23 @@ async function gererEnvoi() {
         md5Ok = true;
         document.getElementById('md5LocalTxt').textContent = 'MD5 calculé.';
         observer.disconnect();
-        majSucces();
+          // Cacher la barre de progression MD5 comme l'upload
+          const md5Container = document.getElementById('md5LocalContainer');
+          if (md5Container) md5Container.classList.add('d-none');
+          majSucces();
       }
     });
     observer.observe(md5Bar, { attributes: true });
+    // Masquer la barre MD5 si le calcul est déjà terminé (sécurité)
+    if (md5Bar.style.width === '100%') {
+      const md5Container = document.getElementById('md5LocalContainer');
+      if (md5Container) md5Container.classList.add('d-none');
+    }
+
+
+    // Afficher la barre de progression upload
+    const uploadContainerShow = document.getElementById('uploadProgressContainer');
+    if (uploadContainerShow) uploadContainerShow.classList.remove('d-none');
 
     // Upload
     const onUploadProgress = (pct) => {
@@ -272,6 +298,9 @@ async function gererEnvoi() {
       txt.textContent = pct < 100 ? `Upload : ${pct}%` : 'Upload terminé';
       if (pct === 100) {
         uploadOk = true;
+        // Cacher la barre de progression upload
+        const uploadContainerHide = document.getElementById('uploadProgressContainer');
+        if (uploadContainerHide) uploadContainerHide.classList.add('d-none');
         majSucces();
       }
     };
