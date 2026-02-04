@@ -1,139 +1,120 @@
-import { afficherSpinner, afficherStatus, chargerFeuilleDeStyle, chargerScript } from './helpersUI.js';
-import { calculerMD5Local, calculerMD5Distant, comparerMD5 } from './md5.js';
+import { afficherStatus, chargerFeuilleDeStyle, chargerScript } from './helpersUI.js';
+import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
 
 const URL_API = 'https://vitam.scdi-montpellier.fr:8443/';
 const JETON_API = '800HxwzchfvLh9E8YjXf5UfGDaJ8Iz3UG0v2T7dwDMZByzcsOAfw10uS98rY0RqR';
 
-window.comparerMD5 = comparerMD5;
-window.calculerMD5Distant = () => calculerMD5Distant(URL_API, JETON_API);
-
-
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
 chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
   .then(initialiserUI);
 
-
+/* ===============================
+   UI
+================================ */
 async function initialiserUI() {
   document.body.innerHTML = '';
+  document.body.classList.add('page-sendding');
 
   const header = document.createElement('header');
   document.body.appendChild(header);
 
   try {
     const navbar = await import('../../components/navbar.js');
-    if (navbar?.initNavbar) await navbar.initNavbar('header');
+    await navbar.initNavbar('header');
   } catch {}
 
-  // Vérifier le rôle de l'utilisateur
   let isAdmin = false;
   try {
     const { getCurrentUser } = await import('../../API/users/currentUser.js');
-    const currentUser = await getCurrentUser();
-    if (currentUser && currentUser.roleId === 1) {
-      isAdmin = true;
-    }
-  } catch (e) {
+    const user = await getCurrentUser();
+    isAdmin = user?.roleId === 1;
+  } catch {}
 
-    isAdmin = false;
-  }
 
-  const conteneur = document.createElement('div');
-  conteneur.className = 'container min-vh-100 d-flex justify-content-center align-items-center py-5';
+  const container = document.createElement('div');
+  container.className = 'container d-flex justify-content-center align-items-center';
+  container.style.height = '100vh';
+  container.style.overflowY = 'hidden';
 
   const card = document.createElement('div');
-  card.className = 'card shadow-lg w-100';
-  card.style.maxWidth = '560px';
+  card.className = 'card border-0 shadow-lg w-100 animate__animated animate__fadeIn';
+  card.style.maxWidth = '600px';
+  card.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%)';
 
   card.innerHTML = `
-    <div class="card-header bg-primary text-white text-center py-3">
-      <h5 class="mb-0">
+    <div class="card-header bg-gradient bg-primary text-white text-center py-4 rounded-top">
+      <h3 class="mb-0 fw-bold">
         <i class="fa-solid fa-file-zipper me-2"></i>
-        Envoi d'un paquet
-      </h5>
+        Envoi d’un paquet ZIP
+      </h3>
     </div>
 
-    <div class="card-body">
-
-      <!-- Fichier -->
-      <div class="mb-4">
-        <label for="inputFichier" class="form-label fw-semibold">
+    <div class="card-body p-0">
+      <div class="mb-4" style="padding: 1.5rem;">
+        <label class="form-label fw-semibold">
           <i class="fa-solid fa-folder-open me-1 text-secondary"></i>
           Fichier ZIP
         </label>
-        <input type="file" id="inputFichier" class="form-control" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
-        <div class="form-text">Seuls les fichiers <strong>.zip</strong> sont acceptés.</div>
+        <input type="file" id="inputFichier" class="form-control form-control-lg border-2" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
+        <div class="form-text">Format accepté : <span class="badge bg-secondary">.zip</span></div>
       </div>
 
-      <!-- Bouton -->
-      <button id="btnEnvoyer" class="btn btn-success w-100 fw-semibold mb-4" ${!isAdmin ? 'disabled' : ''}>
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-        Envoyer le fichier
-      </button>
+      <div style="padding: 0 1.5rem;">
+        <button id="btnEnvoyer"
+                class="btn btn-success btn-lg w-100 fw-semibold mb-4 d-flex justify-content-center align-items-center gap-2 shadow-sm"
+                style="letter-spacing:0.5px;"
+                ${!isAdmin ? 'disabled' : ''}>
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Envoyer le fichier</span>
+        </button>
 
-      ${!isAdmin ? `<div class="alert alert-danger text-center">Seuls les administrateurs peuvent envoyer des fichiers.</div>` : ''}
+        <div id="zoneStatus" class="alert d-none text-center mb-3"></div>
+        <div id="etatUpload" class="alert d-none text-center" role="alert"></div>
 
-      <!-- MD5 local -->
-      <div class="mb-4">
-        <h6 class="fw-bold mb-2">
-          <i class="fa-solid fa-hashtag text-info me-1"></i>
-          Hash MD5 local
-        </h6>
+        ${!isAdmin ? `
+          <div class="alert alert-danger text-center small rounded-pill px-3 py-2">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            Accès réservé aux administrateurs
+          </div>` : ''}
 
-        <div class="input-group mb-2">
-          <span class="input-group-text">
-            <div id="md5LocalSpin" class="spinner-border spinner-border-sm text-info" style="display:none;"></div>
-          </span>
-          <input id="md5Local" class="form-control font-monospace" readonly>
+        <div id="md5LocalContainer" class="mb-4 d-none">
+          <label class="form-label small fw-semibold text-muted">Empreinte MD5 (local)</label>
+          <div class="progress" style="height:10px;">
+            <div id="md5LocalProgress"
+                 class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                 style="width:0%"
+                 aria-valuemin="0"
+                 aria-valuemax="100"></div>
+          </div>
+          <small id="md5LocalTxt" class="text-muted d-block mt-1"></small>
+          <input id="md5Local" type="hidden">
         </div>
 
-        <div class="progress mb-1" style="height:6px;">
-          <div id="md5LocalProgress" class="progress-bar bg-info" style="width:0%"></div>
+        <div id="uploadProgressContainer" class="mb-3 d-none">
+          <label class="form-label small fw-semibold text-muted">Envoi vers le serveur</label>
+          <div class="progress" style="height:10px;">
+            <div id="uploadProgress"
+                 class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                 style="width:0%"
+                 aria-valuemin="0"
+                 aria-valuemax="100"></div>
+          </div>
+          <small id="uploadProgressTxt" class="text-muted d-block mt-1"></small>
         </div>
-
-        <small id="md5LocalTxt" class="text-muted"></small>
       </div>
-
-      <!-- Infos reprise -->
-      <div id="infoReprise" class="text-warning small mb-2"></div>
-
-      <!-- Statut -->
-      <div id="zoneStatus" class="alert alert-secondary text-center py-2">
-        <i class="fa-solid fa-hourglass-half me-1"></i>
-        En attente d’envoi…
-      </div>
-
-      <!-- MD5 distant -->
-      <div class="mb-3">
-        <h6 class="fw-bold mb-2">
-          <i class="fa-solid fa-server text-primary me-1"></i>
-          Hash MD5 distant
-        </h6>
-
-        <div class="input-group">
-          <span class="input-group-text">
-            <div id="md5DistantSpin" class="spinner-border spinner-border-sm text-primary" style="display:none;"></div>
-          </span>
-          <input id="md5Distant" class="form-control font-monospace" readonly>
-        </div>
-
-        <small id="md5DistantTxt" class="text-muted"></small>
-      </div>
-
-      <!-- Concordance -->
-      <div id="concordanceMD5" class="mt-3"></div>
-
     </div>
 
-    <div class="card-footer text-center text-muted small">
-      Vérification d’intégrité par empreinte <strong>MD5</strong>
+    <div class="card-footer text-center text-muted small rounded-bottom bg-light border-top">
+      <i class="fa-solid fa-shield-halved me-1"></i>
+      Vérification d’intégrité MD5
     </div>
   `;
 
-  conteneur.appendChild(card);
-  document.body.appendChild(conteneur);
+  container.appendChild(card);
+  document.body.appendChild(container);
 
   if (isAdmin) {
     document.getElementById('btnEnvoyer').onclick = gererEnvoi;
@@ -141,159 +122,207 @@ async function initialiserUI() {
 }
 
 /* ===============================
-   Gestion de l’envoi
+   Envoi
 ================================ */
-import { createPaquet } from '../../API/paquet/paquet.js';
-
 async function gererEnvoi() {
   const bouton = document.getElementById('btnEnvoyer');
+  const input = document.getElementById('inputFichier');
+  const fichier = input.files[0];
+
+  if (!fichier) {
+    afficherStatus('Veuillez sélectionner un fichier ZIP.', 'danger');
+    return;
+  }
 
   bouton.disabled = true;
   bouton.innerHTML = `
-    <span class="spinner-border spinner-border-sm me-2"></span>
-    Envoi en cours…
+    <span class="spinner-border spinner-border-sm"></span>
+    <span>Envoi en cours…</span>
   `;
 
-  [
-    'md5DistantSpin',
-    'md5DistantTxt',
-    'md5Distant',
-    'md5LocalSpin',
-    'md5LocalTxt',
-    'md5Local',
-    'concordanceMD5',
-    'infoReprise'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
+  let md5Ok = false;
+  let uploadOk = false;
 
-  afficherStatus('Calcul du MD5 local…', 'secondary');
+  const majSucces = () => {
+    if (md5Ok && uploadOk) {
+      afficherStatus(`Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
+      const etat = document.getElementById('etatUpload');
+      etat.textContent = '';
+      etat.className = 'alert d-none text-center';
+    }
+  };
 
-  // Récupérer le nom du fichier sélectionné
-  const inputFichier = document.getElementById('inputFichier');
-  const fichier = inputFichier && inputFichier.files && inputFichier.files[0];
-  if (!fichier) {
-    afficherStatus('Veuillez sélectionner un fichier ZIP.', 'danger');
+  try {
+    // Afficher la barre de progression MD5
+    const md5Container = document.getElementById('md5LocalContainer');
+    if (md5Container) md5Container.classList.remove('d-none');
+    // Cacher la barre d'upload au début
+    const uploadContainerInit = document.getElementById('uploadProgressContainer');
+    if (uploadContainerInit) uploadContainerInit.classList.add('d-none');
+    // Vérifier si le paquet existe avant de continuer
+    const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
+    let coteSansPrefix = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
+    const modulePaquet = await import('../../API/paquet/paquet.js');
+    if (!modulePaquet?.fetchOnePaquet) {
+      afficherStatus('Erreur interne : fetchOnePaquet non disponible.', 'danger');
+      bouton.disabled = false;
+      bouton.innerHTML = `
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Envoyer le fichier</span>
+      `;
+      return;
+    }
+    const result = await modulePaquet.fetchOnePaquet(coteSansPrefix);
+    if (!result || !result.success || !result.data) {
+      // Afficher la card de création paquet et stopper l'envoi
+      const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
+      // On crée une card personnalisée pour ce cas
+      const overlay = document.createElement('div');
+      overlay.id = 'paquet-modal-overlay-upload';
+      overlay.className = 'modal fade show';
+      overlay.style.display = 'block';
+      overlay.style.background = 'rgba(0,0,0,0.5)';
+      overlay.style.position = 'fixed';
+      overlay.style.top = 0;
+      overlay.style.left = 0;
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.zIndex = 3000;
+
+      const modal = document.createElement('div');
+      modal.className = 'modal-dialog modal-dialog-centered';
+      modal.style.maxWidth = '500px';
+      modal.style.width = '100%';
+
+      const modalContent = document.createElement('div');
+      modalContent.className = 'modal-content shadow-lg';
+
+      const modalHeader = document.createElement('div');
+      modalHeader.className = 'modal-header';
+      const title = document.createElement('h5');
+      title.className = 'modal-title fw-bold text-center w-100';
+      title.textContent = 'Créer le paquet ?';
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close';
+      closeBtn.setAttribute('aria-label', 'Fermer');
+      closeBtn.onclick = () => overlay.remove();
+      modalHeader.appendChild(title);
+      modalHeader.appendChild(closeBtn);
+
+      const modalBody = document.createElement('div');
+      modalBody.className = 'modal-body text-center';
+      modalBody.innerHTML = `<p>Le paquet <strong>${coteSansPrefix}</strong> n'existe pas.<br>Voulez-vous le créer maintenant ?</p>`;
+
+      const modalFooter = document.createElement('div');
+      modalFooter.className = 'modal-footer d-flex justify-content-center gap-3';
+      const btnCreer = document.createElement('button');
+      btnCreer.className = 'btn btn-success';
+      btnCreer.textContent = 'Créer le paquet';
+      btnCreer.onclick = () => {
+        overlay.remove();
+        // Préremplir le nom de dossier et la cote avec le nom du fichier (sans .zip et sans SIP_)
+        const defaultName = coteSansPrefix;
+        afficherCardPaquetAddModal({
+          folderName: defaultName,
+          cote: defaultName
+        });
+      };
+      const btnAnnuler = document.createElement('button');
+      btnAnnuler.className = 'btn btn-outline-secondary';
+      btnAnnuler.textContent = 'Annuler';
+      btnAnnuler.onclick = () => {
+        overlay.remove();
+        afficherStatus('Envoi annulé. Le paquet doit être créé avant l’envoi.', 'warning');
+      };
+      modalFooter.appendChild(btnCreer);
+      modalFooter.appendChild(btnAnnuler);
+
+      modalContent.appendChild(modalHeader);
+      modalContent.appendChild(modalBody);
+      modalContent.appendChild(modalFooter);
+      modal.appendChild(modalContent);
+      overlay.appendChild(modal);
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.remove();
+      });
+      document.body.appendChild(overlay);
+      bouton.disabled = false;
+      bouton.innerHTML = `
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Envoyer le fichier</span>
+      `;
+      return;
+    }
+
+    // MD5
+
+    document.getElementById('md5LocalTxt').textContent = 'Calcul MD5 en cours…';
+    await calculerMD5Local();
+
+    const md5Bar = document.getElementById('md5LocalProgress');
+    const observer = new MutationObserver(() => {
+      const pct = parseInt(md5Bar.style.width);
+      if (!isNaN(pct)) {
+        md5Bar.setAttribute('aria-valuenow', pct);
+        document.getElementById('md5LocalTxt').textContent = `MD5 : ${pct}%`;
+      }
+      if (pct === 100) {
+        md5Ok = true;
+        document.getElementById('md5LocalTxt').textContent = 'MD5 calculé.';
+        observer.disconnect();
+          // Cacher la barre de progression MD5 comme l'upload
+          const md5Container = document.getElementById('md5LocalContainer');
+          if (md5Container) md5Container.classList.add('d-none');
+          majSucces();
+      }
+    });
+    observer.observe(md5Bar, { attributes: true });
+    // Masquer la barre MD5 si le calcul est déjà terminé (sécurité)
+    if (md5Bar.style.width === '100%') {
+      const md5Container = document.getElementById('md5LocalContainer');
+      if (md5Container) md5Container.classList.add('d-none');
+    }
+
+
+    // Afficher la barre de progression upload
+    const uploadContainerShow = document.getElementById('uploadProgressContainer');
+    if (uploadContainerShow) uploadContainerShow.classList.remove('d-none');
+
+    // Upload
+    const onUploadProgress = (pct) => {
+      const bar = document.getElementById('uploadProgress');
+      const txt = document.getElementById('uploadProgressTxt');
+      bar.style.width = pct + '%';
+      bar.setAttribute('aria-valuenow', pct);
+      txt.textContent = pct < 100 ? `Upload : ${pct}%` : 'Upload terminé';
+      if (pct === 100) {
+        uploadOk = true;
+        // Cacher la barre de progression upload
+        const uploadContainerHide = document.getElementById('uploadProgressContainer');
+        if (uploadContainerHide) uploadContainerHide.classList.add('d-none');
+        majSucces();
+      }
+    };
+
+    const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
+
+    await envoyerFichier(
+      URL_API,
+      JETON_API,
+      importerCardConfirm,
+      envoyerFichierAvecRemplacement,
+      mettreAJourStatutPaquet,
+      onUploadProgress
+    );
+
+  } catch (e) {
+    afficherStatus('Erreur lors de l’envoi du fichier.', 'danger');
+  } finally {
     bouton.disabled = false;
     bouton.innerHTML = `
-      <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-      Envoyer le fichier
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <span>Envoyer le fichier</span>
     `;
-    return;
   }
-  const nomFichier = fichier.name;
-  const cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
-
-
-  // Vérifier si le paquet existe déjà dans la base avec fetchOnePaquet
-  let paquetExiste = false;
-  try {
-    const { fetchOnePaquet } = await import('../../API/paquet/paquet.js');
-    const data = await fetchOnePaquet(cote);
-    console.log('[DEBUG] fetchOnePaquet(', cote, ') =>', data);
-    if (
-      data &&
-      data.success &&
-      data.data &&
-      typeof data.data.cote === 'string' &&
-      data.data.cote.trim().toLowerCase() === cote.trim().toLowerCase()
-    ) {
-      paquetExiste = true;
-    }
-  } catch (e) { console.error('[DEBUG] fetchOnePaquet error', e); }
-
-  if (!paquetExiste) {
-    // card de confirmation avant l'envoi
-    const cardOverlay = document.createElement('div');
-    cardOverlay.style.position = 'fixed';
-    cardOverlay.style.top = 0;
-    cardOverlay.style.left = 0;
-    cardOverlay.style.width = '100vw';
-    cardOverlay.style.height = '100vh';
-    cardOverlay.style.background = 'rgba(0,0,0,0.5)';
-    cardOverlay.style.zIndex = 4000;
-    cardOverlay.id = 'card-paquet-confirm-overlay';
-
-    const card = document.createElement('div');
-    card.className = 'card shadow-lg';
-    card.style.maxWidth = '400px';
-    card.style.margin = '10vh auto 0 auto';
-    card.style.position = 'relative';
-    card.style.top = '10vh';
-
-    card.innerHTML = `
-      <div class="card-header bg-warning text-dark text-center">
-        <h5 class="mb-0">Paquet introuvable</h5>
-      </div>
-      <div class="card-body text-center">
-        <p>Le paquet <b>${cote}</b> n'existe pas.<br>Voulez-vous le créer avant l'envoi ?</p>
-        <div class="d-flex justify-content-center gap-3 mt-4">
-          <button id="btn-creer-paquet" class="btn btn-success">Créer paquet</button>
-          <button id="btn-annuler-paquet" class="btn btn-secondary">Annuler</button>
-        </div>
-      </div>
-    `;
-
-    cardOverlay.appendChild(card);
-    document.body.appendChild(cardOverlay);
-
-    document.getElementById('btn-annuler-paquet').onclick = () => {
-      cardOverlay.remove();
-      bouton.disabled = false;
-      bouton.innerHTML = `
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-        Envoyer le fichier
-      `;
-    };
-    document.getElementById('btn-creer-paquet').onclick = async () => {
-      cardOverlay.remove();
-      const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
-      afficherCardPaquetAddModal();
-      setTimeout(() => {
-        const coteInput = document.querySelector('input[name="cote"]');
-        if (coteInput) {
-          coteInput.value = cote;
-          coteInput.readOnly = true;
-        }
-        const folderInput = document.querySelector('input[name="folderName"]');
-        if (folderInput) {
-          folderInput.value = cote;
-        }
-      }, 200);
-      bouton.disabled = false;
-      bouton.innerHTML = `
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-        Envoyer le fichier
-      `;
-    };
-    return;
-  }
-
-  calculerMD5Local()
-    .then(() => {
-      const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
-      envoyerFichier(
-        URL_API,
-        JETON_API,
-        importerCardConfirm,
-        envoyerFichierAvecRemplacement,
-        mettreAJourStatutPaquet
-      );
-    })
-    .finally(() => {
-      bouton.disabled = false;
-      bouton.innerHTML = `
-        <i class="fa-solid fa-cloud-arrow-up me-2"></i>
-        Envoyer le fichier
-      `;
-    });
 }
-
-window.EnvoiCinesImmediat = () => {
-  alert('Envoi immédiat déclenché !');
-};
-
-window.EnvoiCinesDiffere = () => {
-  alert('Envoi différé déclenché !');
-};
