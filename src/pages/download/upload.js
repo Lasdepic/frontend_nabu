@@ -156,7 +156,6 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
       if (infoReprise) infoReprise.textContent = "";
       if (typeof onUploadProgress === 'function') onUploadProgress(100);
       await mettreAJourStatutPaquet(fichier.name, 7); 
-      afficherStatus("Paquet envoyé avec succès au serveur.", "success");
       if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     } else {
       if (infoReprise) infoReprise.textContent = "";
@@ -219,7 +218,6 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
     if (xhr.status >= 200 && xhr.status < 300) {
       if (infoReprise) infoReprise.textContent = "";
       await mettreAJourStatutPaquet(fichier.name, 7); 
-      afficherStatus("Paquet envoyé avec succès au serveur.", "success");
       // 3. Calculer le MD5 du nouveau fichier après l'envoi
       if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     } else {

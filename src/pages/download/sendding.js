@@ -80,29 +80,17 @@ async function initialiserUI() {
             Accès réservé aux administrateurs
           </div>` : ''}
 
-        <div id="md5LocalContainer" class="mb-4 d-none">
-          <label class="form-label small fw-semibold text-muted">Empreinte MD5 (local)</label>
-          <div class="progress" style="height:10px;">
-            <div id="md5LocalProgress"
-                 class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                 style="width:0%"
-                 aria-valuemin="0"
-                 aria-valuemax="100"></div>
+        <div id="progressContainer" class="mb-4 d-none">
+          <label class="form-label small fw-semibold text-muted">Envoi du paquet...</label>
+          <div class="progress">
+            <div id="progressBar"
+                 class="progress-bar"
+                 role="progressbar"
+                 style="width:0%;"
+                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
           </div>
-          <small id="md5LocalTxt" class="text-muted d-block mt-1"></small>
+          <small id="progressTxt" class="text-muted d-block mt-1"></small>
           <input id="md5Local" type="hidden">
-        </div>
-
-        <div id="uploadProgressContainer" class="mb-3 d-none">
-          <label class="form-label small fw-semibold text-muted">Envoi vers le serveur</label>
-          <div class="progress" style="height:10px;">
-            <div id="uploadProgress"
-                 class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                 style="width:0%"
-                 aria-valuemin="0"
-                 aria-valuemax="100"></div>
-          </div>
-          <small id="uploadProgressTxt" class="text-muted d-block mt-1"></small>
         </div>
       </div>
     </div>
@@ -140,11 +128,10 @@ async function gererEnvoi() {
     <span>Envoi en cours…</span>
   `;
 
-  let md5Ok = false;
-  let uploadOk = false;
+  let operationTerminee = false;
 
   const majSucces = () => {
-    if (md5Ok && uploadOk) {
+    if (operationTerminee) {
       afficherStatus(`Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
       const etat = document.getElementById('etatUpload');
       etat.textContent = '';
@@ -153,13 +140,8 @@ async function gererEnvoi() {
   };
 
   try {
-    // Afficher la barre de progression MD5
-    const md5Container = document.getElementById('md5LocalContainer');
-    if (md5Container) md5Container.classList.remove('d-none');
-    // Cacher la barre d'upload au début
-    const uploadContainerInit = document.getElementById('uploadProgressContainer');
-    if (uploadContainerInit) uploadContainerInit.classList.add('d-none');
-    // Vérifier si le paquet existe avant de continuer
+    const progressContainer = document.getElementById('progressContainer');
+    if (progressContainer) progressContainer.classList.remove('d-none');
     const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
     let coteSansPrefix = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
     const modulePaquet = await import('../../API/paquet/paquet.js');
@@ -174,9 +156,7 @@ async function gererEnvoi() {
     }
     const result = await modulePaquet.fetchOnePaquet(coteSansPrefix);
     if (!result || !result.success || !result.data) {
-      // Afficher la card de création paquet et stopper l'envoi
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
-      // On crée une card personnalisée pour ce cas
       const overlay = document.createElement('div');
       overlay.id = 'paquet-modal-overlay-upload';
       overlay.className = 'modal fade show';
@@ -221,7 +201,6 @@ async function gererEnvoi() {
       btnCreer.textContent = 'Créer le paquet';
       btnCreer.onclick = () => {
         overlay.remove();
-        // Préremplir le nom de dossier et la cote avec le nom du fichier (sans .zip et sans SIP_)
         const defaultName = coteSansPrefix;
         afficherCardPaquetAddModal({
           folderName: defaultName,
@@ -254,67 +233,80 @@ async function gererEnvoi() {
       `;
       return;
     }
+    const progressBar = document.getElementById('progressBar');
+    const md5Local = document.getElementById('md5Local');
 
-    // MD5
+    let md5Pourcentage = 0;
+    let uploadPourcentage = 0;
+    let md5Termine = false;
+    let uploadTermine = false;
+    let erreur = false;
 
-    document.getElementById('md5LocalTxt').textContent = 'Calcul MD5 en cours…';
-    await calculerMD5Local();
+    function updateProgressBar() {
+      let totalPct = Math.round((md5Pourcentage + uploadPourcentage) / 2);
+      progressBar.style.width = totalPct + '%';
+      progressBar.setAttribute('aria-valuenow', totalPct);
+      progressBar.textContent = totalPct + '%';
+    }
+    
+    const inputFichier = document.getElementById('inputFichier');
+    const fichierAEnvoyer = inputFichier.files[0];
+    const tailleMorceau = 2 * 1024 * 1024;
+    const nombreMorceaux = Math.ceil(fichierAEnvoyer.size / tailleMorceau);
+    let morceauActuel = 0;
+    const calculateurMD5 = new window.SparkMD5.ArrayBuffer();
+    const lecteur = new FileReader();
 
-    const md5Bar = document.getElementById('md5LocalProgress');
-    const observer = new MutationObserver(() => {
-      const pct = parseInt(md5Bar.style.width);
-      if (!isNaN(pct)) {
-        md5Bar.setAttribute('aria-valuenow', pct);
-        document.getElementById('md5LocalTxt').textContent = `MD5 : ${pct}%`;
-      }
-      if (pct === 100) {
-        md5Ok = true;
-        document.getElementById('md5LocalTxt').textContent = 'MD5 calculé.';
-        observer.disconnect();
-          // Cacher la barre de progression MD5 comme l'upload
-          const md5Container = document.getElementById('md5LocalContainer');
-          if (md5Container) md5Container.classList.add('d-none');
+    function calculerMD5EnParallele() {
+      if (morceauActuel >= nombreMorceaux) {
+        md5Termine = true;
+        md5Pourcentage = 100;
+        if (md5Local) md5Local.value = calculateurMD5.end();
+        updateProgressBar();
+        if (uploadTermine) {
+          operationTerminee = true;
+          progressContainer.classList.add('d-none');
           majSucces();
+        }
+        return;
       }
-    });
-    observer.observe(md5Bar, { attributes: true });
-    // Masquer la barre MD5 si le calcul est déjà terminé (sécurité)
-    if (md5Bar.style.width === '100%') {
-      const md5Container = document.getElementById('md5LocalContainer');
-      if (md5Container) md5Container.classList.add('d-none');
+      const debut = morceauActuel * tailleMorceau;
+      const fin = Math.min(debut + tailleMorceau, fichierAEnvoyer.size);
+      lecteur.onload = e => {
+        calculateurMD5.append(e.target.result);
+        morceauActuel++;
+        md5Pourcentage = Math.ceil(morceauActuel * 100 / nombreMorceaux);
+        updateProgressBar();
+        calculerMD5EnParallele();
+      };
+      lecteur.readAsArrayBuffer(fichierAEnvoyer.slice(debut, fin));
     }
 
-
-    // Afficher la barre de progression upload
-    const uploadContainerShow = document.getElementById('uploadProgressContainer');
-    if (uploadContainerShow) uploadContainerShow.classList.remove('d-none');
-
-    // Upload
-    const onUploadProgress = (pct) => {
-      const bar = document.getElementById('uploadProgress');
-      const txt = document.getElementById('uploadProgressTxt');
-      bar.style.width = pct + '%';
-      bar.setAttribute('aria-valuenow', pct);
-      txt.textContent = pct < 100 ? `Upload : ${pct}%` : 'Upload terminé';
-      if (pct === 100) {
-        uploadOk = true;
-        // Cacher la barre de progression upload
-        const uploadContainerHide = document.getElementById('uploadProgressContainer');
-        if (uploadContainerHide) uploadContainerHide.classList.add('d-none');
-        majSucces();
-      }
-    };
-
+    // Upload en parallèle du calcul MD5
     const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
-
-    await envoyerFichier(
+    envoyerFichier(
       URL_API,
       JETON_API,
       importerCardConfirm,
       envoyerFichierAvecRemplacement,
       mettreAJourStatutPaquet,
-      onUploadProgress
-    );
+      (pct) => {
+        uploadPourcentage = pct;
+        if (pct === 100) {
+          uploadTermine = true;
+          if (md5Termine) {
+            operationTerminee = true;
+            progressContainer.classList.add('d-none');
+            majSucces();
+          }
+        }
+        updateProgressBar();
+      }
+    ).catch(() => {
+      erreur = true;
+    });
+
+    calculerMD5EnParallele();
 
   } catch (e) {
     afficherStatus('Erreur lors de l’envoi du fichier.', 'danger');
@@ -326,3 +318,4 @@ async function gererEnvoi() {
     `;
   }
 }
+
