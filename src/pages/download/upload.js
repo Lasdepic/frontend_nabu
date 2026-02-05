@@ -49,7 +49,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
             nomFichier: fichier.name,
             onConfirmer: () => {
               modalContainer.remove();
-              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet);
+              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
             },
             onAnnuler: () => {
               modalContainer.remove();
@@ -105,7 +105,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
             nomFichier: fichier.name,
             onConfirmer: () => {
               modalContainer.remove();
-              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet);
+              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
             },
             onAnnuler: () => {
               modalContainer.remove();
@@ -167,7 +167,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
 }
 
 // Remplacement complet : suppression, upload, recalcul MD5
-export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet) {
+export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress) {
   const infoReprise = document.getElementById('infoReprise');
   let decalage = 0;
   // 1. Supprimer l'ancien fichier sur le serveur (méthode GET, header X-File-Name)
@@ -209,19 +209,23 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
   xhr.upload.onprogress = e => {
     const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
     if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
+    if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
   };
   xhr.onerror = () => {
     if (infoReprise) infoReprise.textContent = "";
+    if (typeof onUploadProgress === 'function') onUploadProgress(0);
     afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
   };
   xhr.onload = async () => {
     if (xhr.status >= 200 && xhr.status < 300) {
       if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(100);
       await mettreAJourStatutPaquet(fichier.name, 7); 
       // 3. Calculer le MD5 du nouveau fichier après l'envoi
       if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     } else {
       if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
       afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
     }
   };
