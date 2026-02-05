@@ -26,7 +26,12 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
   if (donnees.exist === true) {
     const md5Local = document.getElementById('md5Local')?.value;
     if (donnees.md5 && donnees.md5 !== "") {
-      if (md5Local && donnees.md5 !== md5Local) {
+      if (md5Local && donnees.md5 === md5Local) {
+        // MD5 identiques : fichier vraiment identique
+        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
+        return;
+      } else {
+        // MD5 différents OU pas de md5Local : proposer le remplacement
         importerCardConfirm().then(({ afficherCardConfirm }) => {
           let modalContainer = document.getElementById('modalCardConfirm');
           if (!modalContainer) {
@@ -58,9 +63,6 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           });
           modalContainer.appendChild(card);
         });
-        return;
-      } else if (md5Local && donnees.md5 === md5Local) {
-        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
         return;
       }
     } else {
@@ -82,7 +84,13 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
         }
       } catch (e) { md5Distant = ''; }
       const md5Local = document.getElementById('md5Local')?.value;
-      if (md5Local && md5Distant && md5Distant !== md5Local) {
+      if (md5Local && md5Distant && md5Distant === md5Local) {
+        // MD5 identiques : fichier vraiment identique
+        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
+        setTimeout(() => window.location.reload(), 3000);
+        return;
+      } else {
+        // MD5 différents OU impossible de comparer : proposer le remplacement
         importerCardConfirm().then(({ afficherCardConfirm }) => {
           let modalContainer = document.getElementById('modalCardConfirm');
           if (!modalContainer) {
@@ -114,14 +122,6 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           });
           modalContainer.appendChild(card);
         });
-        return;
-      } else if (md5Local && md5Distant && md5Distant === md5Local) {
-        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
-        setTimeout(() => window.location.reload(), 3000);
-        return;
-      } else {
-        afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
-        setTimeout(() => window.location.reload(), 3000);
         return;
       }
     }
