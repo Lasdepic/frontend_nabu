@@ -18,8 +18,8 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
     decalage = donnees.offset || 0;
     statut = donnees.status || "";
   } catch (e) {
-    afficherStatus("Erreur de connexion au serveur", "danger");
-    return;
+    afficherStatus("<i class='fa-solid fa-wifi me-2'></i>Erreur de connexion au serveur", "danger");
+    throw e;
   }
 
   // Gestion des cas d'existence et MD5
@@ -32,65 +32,40 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           if (md5LocalInput && md5LocalInput.value && md5LocalInput.value !== '') {
             resolve(md5LocalInput.value);
           } else {
-            setTimeout(checkMD5, 100); // Vérifier toutes les 100ms
+            setTimeout(checkMD5, 100);
           }
         };
         checkMD5();
       });
     };
 
-    // Attendre que le MD5 local soit calculé
+    const afficherModalConfirmation = (card) => {
+      let modalContainer = document.getElementById('modalCardConfirm');
+      if (!modalContainer) {
+        modalContainer = document.createElement('div');
+        modalContainer.id = 'modalCardConfirm';
+        modalContainer.style.position = 'fixed';
+        modalContainer.style.top = '0';
+        modalContainer.style.left = '0';
+        modalContainer.style.width = '100vw';
+        modalContainer.style.height = '100vh';
+        modalContainer.style.background = 'rgba(0,0,0,0.3)';
+        modalContainer.style.display = 'flex';
+        modalContainer.style.alignItems = 'center';
+        modalContainer.style.justifyContent = 'center';
+        modalContainer.style.zIndex = '9999';
+        document.body.appendChild(modalContainer);
+      }
+      modalContainer.innerHTML = '';
+      modalContainer.appendChild(card);
+    };
+
     const md5Local = await attendreMD5Local();
+    let md5Distant = '';
 
     if (donnees.md5 && donnees.md5 !== "") {
-      if (md5Local && donnees.md5 === md5Local) {
-        // MD5 identiques : fichier vraiment identique
-        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
-        return;
-      } else {
-        // MD5 différents : proposer le remplacement
-        importerCardConfirm().then(({ afficherCardConfirm }) => {
-          let modalContainer = document.getElementById('modalCardConfirm');
-          if (!modalContainer) {
-            modalContainer = document.createElement('div');
-            modalContainer.id = 'modalCardConfirm';
-            modalContainer.style.position = 'fixed';
-            modalContainer.style.top = '0';
-            modalContainer.style.left = '0';
-            modalContainer.style.width = '100vw';
-            modalContainer.style.height = '100vh';
-            modalContainer.style.background = 'rgba(0,0,0,0.3)';
-            modalContainer.style.display = 'flex';
-            modalContainer.style.alignItems = 'center';
-            modalContainer.style.justifyContent = 'center';
-            modalContainer.style.zIndex = '9999';
-            document.body.appendChild(modalContainer);
-          }
-          modalContainer.innerHTML = '';
-          const card = afficherCardConfirm({
-            nomFichier: fichier.name,
-            onConfirmer: () => {
-              modalContainer.remove();
-              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
-            },
-            onAnnuler: () => {
-              modalContainer.remove();
-              afficherStatus("Envoi annulé par l'utilisateur.", "warning");
-            }
-          });
-          modalContainer.appendChild(card);
-        });
-        return;
-      }
+      md5Distant = donnees.md5;
     } else {
-      // Si pas de md5 dans la réponse, on récupére via l'API md5
-      const input = document.getElementById('inputFichier');
-      if (!input || !input.files[0]) {
-        afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
-        return;
-      }
-      const fichier = input.files[0];
-      let md5Distant = '';
       try {
         const reponse = await fetch(URL_API+'index.php?action=md5', {
           headers: { Authorization: 'Bearer '+JETON_API, 'X-File-Name': fichier.name }
@@ -100,88 +75,88 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           md5Distant = donneesMd5.md5 || '';
         }
       } catch (e) { md5Distant = ''; }
-      // Attendre que le MD5 local soit calculé avant de comparer
-      const md5LocalValeur = await attendreMD5Local();
-      if (md5LocalValeur && md5Distant && md5Distant === md5LocalValeur) {
-        // MD5 identiques : fichier vraiment identique
-        afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
-        setTimeout(() => window.location.reload(), 3000);
-        return;
-      } else {
-        // MD5 différents : proposer le remplacement
-        importerCardConfirm().then(({ afficherCardConfirm }) => {
-          let modalContainer = document.getElementById('modalCardConfirm');
-          if (!modalContainer) {
-            modalContainer = document.createElement('div');
-            modalContainer.id = 'modalCardConfirm';
-            modalContainer.style.position = 'fixed';
-            modalContainer.style.top = '0';
-            modalContainer.style.left = '0';
-            modalContainer.style.width = '100vw';
-            modalContainer.style.height = '100vh';
-            modalContainer.style.background = 'rgba(0,0,0,0.3)';
-            modalContainer.style.display = 'flex';
-            modalContainer.style.alignItems = 'center';
-            modalContainer.style.justifyContent = 'center';
-            modalContainer.style.zIndex = '9999';
-            document.body.appendChild(modalContainer);
+    }
+
+    if (md5Local && md5Distant && md5Distant === md5Local) {
+      afficherStatus(`<i class='fa-solid fa-info-circle me-2'></i>Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "info");
+      return;
+    } else if (md5Distant) {
+      importerCardConfirm().then(({ afficherCardConfirm }) => {
+        const card = afficherCardConfirm({
+          nomFichier: fichier.name,
+          onConfirmer: () => {
+            document.getElementById('modalCardConfirm')?.remove();
+            envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
+          },
+          onAnnuler: () => {
+            document.getElementById('modalCardConfirm')?.remove();
+            afficherStatus("Envoi annulé par l'utilisateur.", "warning");
           }
-          modalContainer.innerHTML = '';
-          const card = afficherCardConfirm({
-            nomFichier: fichier.name,
-            onConfirmer: () => {
-              modalContainer.remove();
-              envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
-            },
-            onAnnuler: () => {
-              modalContainer.remove();
-              afficherStatus("Envoi annulé par l'utilisateur.", "warning");
-            }
-          });
-          modalContainer.appendChild(card);
         });
-        return;
-      }
+        afficherModalConfirmation(card);
+      });
+      return;
     }
   }
   if (statut === "error_exist_a_supprimer") {
-    afficherStatus("Le paquet existe déjà sur le serveur.", "warning");
+    afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Le paquet existe déjà sur le serveur.", "warning");
     return;
   }
   if (decalage >= fichier.size) {
-    await mettreAJourStatutPaquet(fichier.name, 7);
-    afficherStatus(`Le paquet <strong>${fichier.name}</strong> envoyé avec succès au serveur.`, "success");
+    await mettreAJourStatutPaquet(fichier.name, 7, true);
+    afficherStatus(`<i class='fa-solid fa-check-circle me-2'></i>Le paquet <strong>${fichier.name}</strong> envoyé avec succès au serveur.`, "success");
     if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     return;
   }
-  const xhr = new XMLHttpRequest();
-  xhr.open("PUT", URL_API+'index.php?action=envoi');
-  xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
-  xhr.setRequestHeader("X-File-Name", fichier.name);
-  xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
-  xhr.upload.onprogress = e => {
-    const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
-    if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
-    if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
-  };
-  xhr.onerror = () => {
-    if (infoReprise) infoReprise.textContent = "";
-    if (typeof onUploadProgress === 'function') onUploadProgress(0);
-    afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-  };
-  xhr.onload = async () => {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(100);
-      await mettreAJourStatutPaquet(fichier.name, 7); 
-      if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
-    } else {
+  
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    // Stocker xhr globalement pour permettre l'annulation
+    if (window.sendding) {
+      window.sendding.xhrGlobal = xhr;
+    }
+    
+    xhr.open("PUT", URL_API+'index.php?action=envoi');
+    xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
+    xhr.setRequestHeader("X-File-Name", fichier.name);
+    xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
+    
+    xhr.upload.onprogress = e => {
+      const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
+      if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
+      if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
+    };
+    
+    xhr.onerror = () => {
       if (infoReprise) infoReprise.textContent = "";
       if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-    }
-  };
-  xhr.send(fichier.slice(decalage));
+      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
+      reject(new Error('Erreur d\'envoi'));
+    };
+    
+    xhr.onabort = () => {
+      if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
+      reject(new Error('Envoi annulé'));
+    };
+    
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (infoReprise) infoReprise.textContent = "";
+        if (typeof onUploadProgress === 'function') onUploadProgress(100);
+        await mettreAJourStatutPaquet(fichier.name, 7, true); 
+        if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
+        resolve();
+      } else {
+        if (infoReprise) infoReprise.textContent = "";
+        if (typeof onUploadProgress === 'function') onUploadProgress(0);
+        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
+        reject(new Error('Erreur HTTP'));
+      }
+    };
+    
+    xhr.send(fichier.slice(decalage));
+  });
 }
 
 // Remplacement complet : suppression, upload, recalcul MD5
@@ -198,12 +173,12 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
       }
     });
     if (!reponseSupp.ok) {
-      afficherStatus("Erreur lors de la suppression de l'ancien fichier.", "danger");
-      return;
+      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur lors de la suppression de l'ancien fichier.", "danger");
+      throw new Error('Erreur suppression');
     }
   } catch (e) {
-    afficherStatus("Erreur de connexion lors de la suppression.", "danger");
-    return;
+    afficherStatus("<i class='fa-solid fa-wifi me-2'></i>Erreur de connexion lors de la suppression.", "danger");
+    throw e;
   }
 
   // 2. Préparer l'envoi du nouveau fichier
@@ -215,37 +190,58 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
     const donnees = await reponse.json();
     decalage = donnees.offset || 0;
   } catch (e) {
-    afficherStatus("Erreur de connexion au serveur", "danger");
-    return;
+    afficherStatus("<i class='fa-solid fa-wifi me-2'></i>Erreur de connexion au serveur", "danger");
+    throw e;
   }
-  const xhr = new XMLHttpRequest();
-  xhr.open("PUT", URL_API+'index.php?action=envoi');
-  xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
-  xhr.setRequestHeader("X-File-Name", fichier.name);
-  xhr.setRequestHeader("X-Force-Replace", "1");
-  xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
-  xhr.upload.onprogress = e => {
-    const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
-    if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
-    if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
-  };
-  xhr.onerror = () => {
-    if (infoReprise) infoReprise.textContent = "";
-    if (typeof onUploadProgress === 'function') onUploadProgress(0);
-    afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-  };
-  xhr.onload = async () => {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(100);
-      await mettreAJourStatutPaquet(fichier.name, 7); 
-      // 3. Calculer le MD5 du nouveau fichier après l'envoi
-      if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
-    } else {
+  
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    // Stocker xhr globalement pour permettre l'annulation
+    if (window.sendding) {
+      window.sendding.xhrGlobal = xhr;
+    }
+    
+    xhr.open("PUT", URL_API+'index.php?action=envoi');
+    xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
+    xhr.setRequestHeader("X-File-Name", fichier.name);
+    xhr.setRequestHeader("X-Force-Replace", "1");
+    xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
+    
+    xhr.upload.onprogress = e => {
+      const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
+      if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
+      if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
+    };
+    
+    xhr.onerror = () => {
       if (infoReprise) infoReprise.textContent = "";
       if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      afficherStatus("Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-    }
-  };
-  xhr.send(fichier.slice(decalage));
+      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
+      reject(new Error('Erreur d\'envoi'));
+    };
+    
+    xhr.onabort = () => {
+      if (infoReprise) infoReprise.textContent = "";
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
+      reject(new Error('Envoi annulé'));
+    };
+    
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (infoReprise) infoReprise.textContent = "";
+        if (typeof onUploadProgress === 'function') onUploadProgress(100);
+        await mettreAJourStatutPaquet(fichier.name, 7, true); 
+        // 3. Calculer le MD5 du nouveau fichier après l'envoi
+        if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
+        resolve();
+      } else {
+        if (infoReprise) infoReprise.textContent = "";
+        if (typeof onUploadProgress === 'function') onUploadProgress(0);
+        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
+        reject(new Error('Erreur HTTP'));
+      }
+    };
+    
+    xhr.send(fichier.slice(decalage));
+  });
 }
