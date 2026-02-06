@@ -24,14 +24,31 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
 
   // Gestion des cas d'existence et MD5
   if (donnees.exist === true) {
-    const md5Local = document.getElementById('md5Local')?.value;
+    // Fonction pour attendre que le MD5 local soit calculé
+    const attendreMD5Local = () => {
+      return new Promise(resolve => {
+        const md5LocalInput = document.getElementById('md5Local');
+        const checkMD5 = () => {
+          if (md5LocalInput && md5LocalInput.value && md5LocalInput.value !== '') {
+            resolve(md5LocalInput.value);
+          } else {
+            setTimeout(checkMD5, 100); // Vérifier toutes les 100ms
+          }
+        };
+        checkMD5();
+      });
+    };
+
+    // Attendre que le MD5 local soit calculé
+    const md5Local = await attendreMD5Local();
+
     if (donnees.md5 && donnees.md5 !== "") {
       if (md5Local && donnees.md5 === md5Local) {
         // MD5 identiques : fichier vraiment identique
         afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
         return;
       } else {
-        // MD5 différents OU pas de md5Local : proposer le remplacement
+        // MD5 différents : proposer le remplacement
         importerCardConfirm().then(({ afficherCardConfirm }) => {
           let modalContainer = document.getElementById('modalCardConfirm');
           if (!modalContainer) {
@@ -83,14 +100,15 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           md5Distant = donneesMd5.md5 || '';
         }
       } catch (e) { md5Distant = ''; }
-      const md5Local = document.getElementById('md5Local')?.value;
-      if (md5Local && md5Distant && md5Distant === md5Local) {
+      // Attendre que le MD5 local soit calculé avant de comparer
+      const md5LocalValeur = await attendreMD5Local();
+      if (md5LocalValeur && md5Distant && md5Distant === md5LocalValeur) {
         // MD5 identiques : fichier vraiment identique
         afficherStatus(`Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "warning");
         setTimeout(() => window.location.reload(), 3000);
         return;
       } else {
-        // MD5 différents OU impossible de comparer : proposer le remplacement
+        // MD5 différents : proposer le remplacement
         importerCardConfirm().then(({ afficherCardConfirm }) => {
           let modalContainer = document.getElementById('modalCardConfirm');
           if (!modalContainer) {
