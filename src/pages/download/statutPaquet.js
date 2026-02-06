@@ -14,7 +14,7 @@ export async function mettreAJourStatutPaquet(nomFichier, statut, autoCreate = f
     if (!result || !result.success || !result.data) {
       // Paquet non trouvé
       if (autoCreate) {
-        // Création automatique du paquet avec les données minimales
+        // Création automatique du paquet 
         console.log('[mettreAJourStatutPaquet] Création automatique du paquet', cote);
         if (!modulePaquet?.createPaquet) {
           console.error('[mettreAJourStatutPaquet] createPaquet non trouvé');
@@ -24,8 +24,8 @@ export async function mettreAJourStatutPaquet(nomFichier, statut, autoCreate = f
           cote: cote,
           statusId: statut,
           statut: statut,
-          corpusId: 1, // Valeur par défaut
-          typeDocumentId: 1 // Valeur par défaut
+          corpusId: 1, 
+          typeDocumentId: 1 
         };
         const resCreate = await modulePaquet.createPaquet(nouveauPaquet);
         if (!resCreate || !resCreate.success) {

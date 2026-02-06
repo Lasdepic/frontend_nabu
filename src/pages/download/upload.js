@@ -24,7 +24,6 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
 
   // Gestion des cas d'existence et MD5
   if (donnees.exist === true) {
-    // Fonction pour attendre que le MD5 local soit calculé
     const attendreMD5Local = () => {
       return new Promise(resolve => {
         const md5LocalInput = document.getElementById('md5Local');
@@ -111,7 +110,6 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
   
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    // Stocker xhr globalement pour permettre l'annulation
     if (window.sendding) {
       window.sendding.xhrGlobal = xhr;
     }
