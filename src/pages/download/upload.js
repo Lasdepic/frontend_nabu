@@ -2,7 +2,9 @@
 import { afficherStatus } from './helpersUI.js';
 import { comparerMD5 } from './md5.js';
 
-export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, envoyerFichierAvecRemplacement, mettreAJourStatutPaquet, onUploadProgress) {
+const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
+
+export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemplacement, mettreAJourStatutPaquet, onUploadProgress) {
   const input = document.getElementById('inputFichier');
   const infoReprise = document.getElementById('infoReprise');
   if (!input || !input.files[0]) return;
@@ -10,8 +12,9 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
   let decalage = 0, statut = "";
   let donnees = {};
   try {
-    const reponse = await fetch(URL_API+'index.php?action=envoi', {
-      headers: { Authorization: 'Bearer ' + JETON_API, 'X-File-Name': fichier.name }
+    const reponse = await fetch(`${VITAM_PROXY_URL}&action=envoi`, {
+      headers: { 'X-File-Name': fichier.name },
+      credentials: 'include'
     });
     if (!reponse.ok) throw new Error('Erreur réseau');
     donnees = await reponse.json();
@@ -66,8 +69,9 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
       md5Distant = donnees.md5;
     } else {
       try {
-        const reponse = await fetch(URL_API+'index.php?action=md5', {
-          headers: { Authorization: 'Bearer '+JETON_API, 'X-File-Name': fichier.name }
+        const reponse = await fetch(`${VITAM_PROXY_URL}&action=md5`, {
+          headers: { 'X-File-Name': fichier.name },
+          credentials: 'include'
         });
         if (reponse.ok) {
           const donneesMd5 = await reponse.json();
@@ -85,7 +89,7 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
           nomFichier: fichier.name,
           onConfirmer: () => {
             document.getElementById('modalCardConfirm')?.remove();
-            envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress);
+            envoyerFichierAvecRemplacement(fichier, mettreAJourStatutPaquet, onUploadProgress);
           },
           onAnnuler: () => {
             document.getElementById('modalCardConfirm')?.remove();
@@ -114,8 +118,8 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
       window.sendding.xhrGlobal = xhr;
     }
     
-    xhr.open("PUT", URL_API+'index.php?action=envoi');
-    xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
+    xhr.open("PUT", `${VITAM_PROXY_URL}&action=envoi`);
+    xhr.withCredentials = true;
     xhr.setRequestHeader("X-File-Name", fichier.name);
     xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
     
@@ -158,17 +162,17 @@ export async function envoyerFichier(URL_API, JETON_API, importerCardConfirm, en
 }
 
 // Remplacement complet : suppression, upload, recalcul MD5
-export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API, mettreAJourStatutPaquet, onUploadProgress) {
+export async function envoyerFichierAvecRemplacement(fichier, mettreAJourStatutPaquet, onUploadProgress) {
   const infoReprise = document.getElementById('infoReprise');
   let decalage = 0;
   // 1. Supprimer l'ancien fichier sur le serveur (méthode GET, header X-File-Name)
   try {
-    const reponseSupp = await fetch(URL_API + 'index.php?action=supprime', {
+    const reponseSupp = await fetch(`${VITAM_PROXY_URL}&action=supprime`, {
       method: 'GET',
       headers: {
-        Authorization: 'Bearer ' + JETON_API,
         'X-File-Name': fichier.name
-      }
+      },
+      credentials: 'include'
     });
     if (!reponseSupp.ok) {
       afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur lors de la suppression de l'ancien fichier.", "danger");
@@ -181,8 +185,9 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
 
   // 2. Préparer l'envoi du nouveau fichier
   try {
-    const reponse = await fetch(URL_API+'index.php?action=envoi', {
-      headers: { Authorization: 'Bearer ' + JETON_API, 'X-File-Name': fichier.name, 'X-Force-Replace': '1' }
+    const reponse = await fetch(`${VITAM_PROXY_URL}&action=envoi`, {
+      headers: { 'X-File-Name': fichier.name, 'X-Force-Replace': '1' },
+      credentials: 'include'
     });
     if (!reponse.ok) throw new Error('Erreur réseau');
     const donnees = await reponse.json();
@@ -199,8 +204,8 @@ export async function envoyerFichierAvecRemplacement(fichier, URL_API, JETON_API
       window.sendding.xhrGlobal = xhr;
     }
     
-    xhr.open("PUT", URL_API+'index.php?action=envoi');
-    xhr.setRequestHeader("Authorization", "Bearer "+JETON_API);
+    xhr.open("PUT", `${VITAM_PROXY_URL}&action=envoi`);
+    xhr.withCredentials = true;
     xhr.setRequestHeader("X-File-Name", fichier.name);
     xhr.setRequestHeader("X-Force-Replace", "1");
     xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);

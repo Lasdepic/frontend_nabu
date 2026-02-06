@@ -3,15 +3,11 @@ import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
 
-const URL_API = 'https://vitam.scdi-montpellier.fr:8443/';
-const JETON_API = '800HxwzchfvLh9E8YjXf5UfGDaJ8Iz3UG0v2T7dwDMZByzcsOAfw10uS98rY0RqR';
-
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
 chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
   .then(initialiserUI);
 
-// Namespace global pour stocker les références
 window.sendding = {
   xhrGlobal: null
 };
@@ -453,8 +449,6 @@ async function gererEnvoi() {
     // Upload en parallèle du calcul MD5
     const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
     envoyerFichier(
-      URL_API,
-      JETON_API,
       importerCardConfirm,
       envoyerFichierAvecRemplacement,
       mettreAJourStatutPaquet,
