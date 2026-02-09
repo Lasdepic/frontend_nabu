@@ -291,10 +291,18 @@ async function gererEnvoi() {
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
       const overlay = document.createElement('div');
       overlay.id = 'paquet-modal-overlay-upload';
-      overlay.className = 'paquet-modal-overlay modal fade show';
+      overlay.className = 'modal fade show';
+      overlay.style.display = 'block';
+      overlay.style.background = 'rgba(0,0,0,0.5)';
+      overlay.style.position = 'fixed';
+      overlay.style.top = 0;
+      overlay.style.left = 0;
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.zIndex = 2000;
 
       const modal = document.createElement('div');
-      modal.className = 'modal-dialog modal-dialog-centered modal-dialog-center';
+      modal.className = 'modal-dialog modal-dialog-centered';
 
       const modalContent = document.createElement('div');
       modalContent.className = 'modal-content shadow-lg';
