@@ -1,5 +1,7 @@
+import API_URL from '../config/config.js';
 
-const VITAM_PROXY_URL = 'backend_nabu/index.php?vitam-proxy=1';
+const baseUrl = String(API_URL || '').replace(/\/+$/, '');
+const VITAM_PROXY_URL = `${baseUrl}/backend_nabu/index.php?vitam-proxy=1`;
 
 export function getVitamProxyUrl(action) {
   return `${VITAM_PROXY_URL}&action=${encodeURIComponent(action)}`;
