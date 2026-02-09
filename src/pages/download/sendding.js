@@ -3,6 +3,8 @@ import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
 
+const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
+
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
 chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
@@ -235,6 +237,76 @@ function configurerGestionFichier() {
 ================================ */
 let uploadEnCours = false;
 
+async function envoyerAuCinesImmediat(nomFichier) {
+  const etat = document.getElementById('etatUpload');
+  if (etat) {
+    etat.className = 'alert alert-info text-center';
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi au CINES...";
+  }
+
+  const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-immediat`, {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    },
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erreur HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data;
+}
+
+async function programmerEnvoiCinesDiffere(nomFichier) {
+  const etat = document.getElementById('etatUpload');
+  if (etat) {
+    etat.className = 'alert alert-info text-center';
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Mise en place de l’envoi différé...";
+  }
+
+  const res = await fetch(`${VITAM_PROXY_URL}&action=programmation-differe`, {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    },
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erreur HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+async function verifierStatutCines(itemid, { intervalMs = 5000, maxTries = 60 } = {}) {
+  for (let i = 0; i < maxTries; i++) {
+    const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-statut`, {
+      method: 'GET',
+      headers: {
+        'X-Item-Id': itemid
+      },
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erreur HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data?.status && data.status !== 'ENVOI_EN_COURS') {
+      return data;
+    }
+
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+
+  return { status: 'STATUT_NON_DISPONIBLE', message: "Délai dépassé pour la vérification d'état." };
+}
+
 async function gererEnvoi() {
   const bouton = document.getElementById('btnEnvoyer');
   const input = document.getElementById('inputFichier');
@@ -260,15 +332,122 @@ async function gererEnvoi() {
     if (operationTerminee) {
       uploadEnCours = false;
       afficherStatus(`<i class="fa-solid fa-check-circle me-2"></i>Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
+
       const etat = document.getElementById('etatUpload');
-      etat.textContent = '';
-      etat.className = 'alert d-none text-center';
-      
-      // Animation de succès et réinitialisation
-      setTimeout(() => {
-        if (progressContainer) progressContainer.classList.add('d-none');
-        reinitialiserFormulaire();
-      }, 2000);
+      if (etat) {
+        etat.className = 'alert alert-light text-center';
+        etat.innerHTML = `
+          <div class='fw-semibold mb-2'>Envoyer le paquet au CINES ?</div>
+          <div id='cines' class='d-flex gap-2 justify-content-center flex-wrap'>
+            <button type='button' id='btnCinesImmediat' class='btn btn-success btn-sm px-4 fw-bold'>Immédiat</button>
+            <button type='button' id='btnCinesDiffere' class='btn btn-outline-secondary btn-sm px-4 fw-bold'>Différé</button>
+          </div>
+          <div id='cines_status' class='small text-muted mt-2'></div>
+        `;
+      }
+
+      const btnImmediat = document.getElementById('btnCinesImmediat');
+      const btnDiffere = document.getElementById('btnCinesDiffere');
+      const cinesStatus = document.getElementById('cines_status');
+
+      const verrouillerChoix = (locked) => {
+        if (btnImmediat) btnImmediat.disabled = locked;
+        if (btnDiffere) btnDiffere.disabled = locked;
+      };
+
+      const nettoyerEtReset = () => {
+        setTimeout(() => {
+          const etat = document.getElementById('etatUpload');
+          if (etat) {
+            etat.textContent = '';
+            etat.className = 'alert d-none text-center';
+          }
+          if (progressContainer) progressContainer.classList.add('d-none');
+          reinitialiserFormulaire();
+        }, 2000);
+      };
+
+      if (btnImmediat) {
+        btnImmediat.onclick = async () => {
+          verrouillerChoix(true);
+          try {
+            const resultat = await envoyerAuCinesImmediat(fichier.name);
+            if (resultat?.status === 'success' && resultat?.itemid) {
+              const etat = document.getElementById('etatUpload');
+              if (etat) {
+                etat.className = 'alert alert-info text-center';
+                etat.innerHTML = `
+                  <div class='fw-semibold mb-1'><i class='fa-solid fa-paper-plane me-2'></i>Envoi au CINES lancé</div>
+                  <div class='small'>Message : ${resultat.message ?? ''}</div>
+                  <div class='small'>itemid : ${resultat.itemid}</div>
+                `;
+              }
+
+              const statut = await verifierStatutCines(resultat.itemid);
+              const etatFinal = document.getElementById('etatUpload');
+              if (etatFinal) {
+                if (statut?.status === 'ENVOI_OK') {
+                  etatFinal.className = 'alert alert-success text-center';
+                  etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Envoi CINES terminé (OK).";
+                } else if (statut?.status === 'ENVOI_EN_COURS') {
+                  etatFinal.className = 'alert alert-info text-center';
+                  etatFinal.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi CINES en cours...";
+                } else {
+                  etatFinal.className = 'alert alert-warning text-center';
+                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
+                }
+              }
+            } else {
+              const etat = document.getElementById('etatUpload');
+              if (etat) {
+                etat.className = 'alert alert-danger text-center';
+                etat.innerHTML = `${resultat?.message ?? "Erreur lors de l'envoi au CINES."}${resultat?.output ? `<br/>${resultat.output}` : ''}`;
+              }
+            }
+          } catch (e) {
+            const etat = document.getElementById('etatUpload');
+            if (etat) {
+              etat.className = 'alert alert-danger text-center';
+              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de l'envoi immédiat au CINES.";
+            }
+          } finally {
+            nettoyerEtReset();
+          }
+        };
+      }
+
+      if (btnDiffere) {
+        btnDiffere.onclick = async () => {
+          verrouillerChoix(true);
+          if (cinesStatus) cinesStatus.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Programmation du différé...";
+          try {
+            const resultat = await programmerEnvoiCinesDiffere(fichier.name);
+            const etat = document.getElementById('etatUpload');
+            if (resultat?.status === 'success') {
+              if (etat) {
+                etat.className = 'alert alert-success text-center';
+                etat.innerHTML = "<i class='fa-solid fa-check me-2'></i>Mise en place de l'envoi différé OK";
+              }
+            } else {
+              if (etat) {
+                etat.className = 'alert alert-warning text-center';
+                etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Impossible de mettre en place l'envoi différé";
+                if (resultat?.error) {
+                  etat.innerHTML += `<br/>${resultat.error}`;
+                }
+              }
+            }
+          } catch (e) {
+            const etat = document.getElementById('etatUpload');
+            if (etat) {
+              etat.className = 'alert alert-danger text-center';
+              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de la programmation du différé.";
+            }
+          } finally {
+            nettoyerEtReset();
+          }
+        };
+      }
     }
   };
 

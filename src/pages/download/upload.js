@@ -82,6 +82,7 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
 
     if (md5Local && md5Distant && md5Distant === md5Local) {
       afficherStatus(`<i class='fa-solid fa-info-circle me-2'></i>Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "info");
+      if (typeof onUploadProgress === 'function') onUploadProgress(100);
       return;
     } else if (md5Distant) {
       return new Promise((resolve, reject) => {
@@ -112,11 +113,13 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
   }
   if (statut === "error_exist_a_supprimer") {
     afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Le paquet existe déjà sur le serveur.", "warning");
+    if (typeof onUploadProgress === 'function') onUploadProgress(0);
     return;
   }
   if (decalage >= fichier.size) {
     await mettreAJourStatutPaquet(fichier.name, 7, true);
     afficherStatus(`<i class='fa-solid fa-check-circle me-2'></i>Le paquet <strong>${fichier.name}</strong> envoyé avec succès au serveur.`, "success");
+    if (typeof onUploadProgress === 'function') onUploadProgress(100);
     if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
     return;
   }
