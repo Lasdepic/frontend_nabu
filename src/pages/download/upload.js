@@ -1,23 +1,115 @@
 // Gestion de l'envoi du fichier (upload)
 import { afficherStatus } from './helpersUI.js';
-import { comparerMD5 } from './md5.js';
+import { callVitamAPI, getVitamProxyUrl } from '../../API/vitam/vitamAPI.js';
 
-const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
+function getMd5LocalValue() {
+  const md5LocalInput = document.getElementById('md5Local');
+  const value = md5LocalInput?.value;
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : '';
+}
+
+function attendreMD5Local({ timeoutMs = 60000, fileName } = {}) {
+  const existing = getMd5LocalValue();
+  if (existing) return Promise.resolve(existing);
+
+  return new Promise((resolve, reject) => {
+    let timeoutId;
+
+    const cleanup = () => {
+      window.removeEventListener('md5local:ready', onReady);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    const onReady = (event) => {
+      const md5 = event?.detail?.md5;
+      const eventFileName = event?.detail?.fileName;
+      if (fileName && eventFileName && eventFileName !== fileName) return;
+      if (typeof md5 !== 'string' || md5.trim() === '') return;
+      cleanup();
+      resolve(md5.trim());
+    };
+
+    window.addEventListener('md5local:ready', onReady);
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout MD5 local'));
+    }, timeoutMs);
+  });
+}
+
+function uploaderViaXhr({ fichier, decalage, extraHeaders = {}, onUploadProgress }) {
+  const infoReprise = document.getElementById('infoReprise');
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    if (window.sendding) {
+      window.sendding.xhrGlobal = xhr;
+    }
+
+    xhr.open('PUT', getVitamProxyUrl('envoi'));
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('X-File-Name', fichier.name);
+    xhr.setRequestHeader('Content-Range', `bytes ${decalage}-${fichier.size - 1}/${fichier.size}`);
+    for (const [key, value] of Object.entries(extraHeaders)) {
+      xhr.setRequestHeader(key, value);
+    }
+
+    xhr.upload.onprogress = (e) => {
+      const pourcentage = Math.round(((decalage + e.loaded) / fichier.size) * 100);
+      if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
+      if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
+    };
+
+    const resetUi = () => {
+      if (infoReprise) infoReprise.textContent = '';
+    };
+
+    xhr.onerror = () => {
+      resetUi();
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
+      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", 'danger');
+      reject(new Error("Erreur d'envoi"));
+    };
+
+    xhr.onabort = () => {
+      resetUi();
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
+      reject(new Error('Envoi annulé'));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resetUi();
+        if (typeof onUploadProgress === 'function') onUploadProgress(100);
+        resolve();
+        return;
+      }
+
+      resetUi();
+      if (typeof onUploadProgress === 'function') onUploadProgress(0);
+      if (xhr.status === 413) {
+        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Fichier trop volumineux (413). La limite serveur doit être augmentée.", 'danger');
+        reject(new Error('413 Request Entity Too Large'));
+        return;
+      }
+      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", 'danger');
+      reject(new Error(`Erreur HTTP ${xhr.status}`));
+    };
+
+    xhr.send(fichier.slice(decalage));
+  });
+}
 
 export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemplacement, mettreAJourStatutPaquet, onUploadProgress) {
   const input = document.getElementById('inputFichier');
-  const infoReprise = document.getElementById('infoReprise');
   if (!input || !input.files[0]) return;
   const fichier = input.files[0];
   let decalage = 0, statut = "";
   let donnees = {};
   try {
-    const reponse = await fetch(`${VITAM_PROXY_URL}&action=envoi`, {
-      headers: { 'X-File-Name': fichier.name },
-      credentials: 'include'
+    donnees = await callVitamAPI('envoi', {
+      headers: { 'X-File-Name': fichier.name }
     });
-    if (!reponse.ok) throw new Error('Erreur réseau');
-    donnees = await reponse.json();
     decalage = donnees.offset || 0;
     statut = donnees.status || "";
   } catch (e) {
@@ -27,20 +119,6 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
 
   // Gestion des cas d'existence et MD5
   if (donnees.exist === true) {
-    const attendreMD5Local = () => {
-      return new Promise(resolve => {
-        const md5LocalInput = document.getElementById('md5Local');
-        const checkMD5 = () => {
-          if (md5LocalInput && md5LocalInput.value && md5LocalInput.value !== '') {
-            resolve(md5LocalInput.value);
-          } else {
-            setTimeout(checkMD5, 100);
-          }
-        };
-        checkMD5();
-      });
-    };
-
     const afficherModalConfirmation = (card) => {
       let modalContainer = document.getElementById('modalCardConfirm');
       if (!modalContainer) {
@@ -56,27 +134,34 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
         modalContainer.style.alignItems = 'center';
         modalContainer.style.justifyContent = 'center';
         modalContainer.style.zIndex = '9999';
+        modalContainer.addEventListener('click', (e) => {
+          if (e.target === modalContainer) {
+            modalContainer.remove();
+            afficherStatus("Envoi annulé par l'utilisateur.", 'warning');
+          }
+        });
         document.body.appendChild(modalContainer);
       }
       modalContainer.innerHTML = '';
       modalContainer.appendChild(card);
     };
 
-    const md5Local = await attendreMD5Local();
+    let md5Local = '';
+    try {
+      md5Local = await attendreMD5Local({ timeoutMs: 60000, fileName: fichier.name });
+    } catch {
+      md5Local = getMd5LocalValue();
+    }
     let md5Distant = '';
 
     if (donnees.md5 && donnees.md5 !== "") {
       md5Distant = donnees.md5;
     } else {
       try {
-        const reponse = await fetch(`${VITAM_PROXY_URL}&action=md5`, {
-          headers: { 'X-File-Name': fichier.name },
-          credentials: 'include'
+        const donneesMd5 = await callVitamAPI('md5', {
+          headers: { 'X-File-Name': fichier.name }
         });
-        if (reponse.ok) {
-          const donneesMd5 = await reponse.json();
-          md5Distant = donneesMd5.md5 || '';
-        }
+        md5Distant = donneesMd5?.md5 || '';
       } catch (e) { md5Distant = ''; }
     }
 
@@ -124,58 +209,9 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
     return;
   }
   
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    if (window.sendding) {
-      window.sendding.xhrGlobal = xhr;
-    }
-    
-    xhr.open("PUT", `${VITAM_PROXY_URL}&action=envoi`);
-    xhr.withCredentials = true;
-    xhr.setRequestHeader("X-File-Name", fichier.name);
-    xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
-    
-    xhr.upload.onprogress = e => {
-      const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
-      if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
-      if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
-    };
-    
-    xhr.onerror = () => {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-      reject(new Error('Erreur d\'envoi'));
-    };
-    
-    xhr.onabort = () => {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      reject(new Error('Envoi annulé'));
-    };
-    
-    xhr.onload = async () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        if (infoReprise) infoReprise.textContent = "";
-        if (typeof onUploadProgress === 'function') onUploadProgress(100);
-        await mettreAJourStatutPaquet(fichier.name, 7, true); 
-        if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
-        resolve();
-      } else {
-        if (infoReprise) infoReprise.textContent = "";
-        if (typeof onUploadProgress === 'function') onUploadProgress(0);
-        if (xhr.status === 413) {
-          afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Fichier trop volumineux (413). La limite serveur doit être augmentée.", 'danger');
-          reject(new Error('413 Request Entity Too Large'));
-          return;
-        }
-        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-        reject(new Error(`Erreur HTTP ${xhr.status}`));
-      }
-    };
-    
-    xhr.send(fichier.slice(decalage));
-  });
+  await uploaderViaXhr({ fichier, decalage, onUploadProgress });
+  await mettreAJourStatutPaquet(fichier.name, 7, true);
+  if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
 }
 
 // Remplacement complet : suppression, upload, recalcul MD5
@@ -184,17 +220,12 @@ export async function envoyerFichierAvecRemplacement(fichier, mettreAJourStatutP
   let decalage = 0;
   // 1. Supprimer l'ancien fichier sur le serveur (méthode GET, header X-File-Name)
   try {
-    const reponseSupp = await fetch(`${VITAM_PROXY_URL}&action=supprime`, {
+    await callVitamAPI('supprime', {
       method: 'GET',
       headers: {
         'X-File-Name': fichier.name
-      },
-      credentials: 'include'
+      }
     });
-    if (!reponseSupp.ok) {
-      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur lors de la suppression de l'ancien fichier.", "danger");
-      throw new Error('Erreur suppression');
-    }
   } catch (e) {
     afficherStatus("<i class='fa-solid fa-wifi me-2'></i>Erreur de connexion lors de la suppression.", "danger");
     throw e;
@@ -202,66 +233,21 @@ export async function envoyerFichierAvecRemplacement(fichier, mettreAJourStatutP
 
   // 2. Préparer l'envoi du nouveau fichier
   try {
-    const reponse = await fetch(`${VITAM_PROXY_URL}&action=envoi`, {
-      headers: { 'X-File-Name': fichier.name, 'X-Force-Replace': '1' },
-      credentials: 'include'
+    const donnees = await callVitamAPI('envoi', {
+      headers: { 'X-File-Name': fichier.name, 'X-Force-Replace': '1' }
     });
-    if (!reponse.ok) throw new Error('Erreur réseau');
-    const donnees = await reponse.json();
     decalage = donnees.offset || 0;
   } catch (e) {
     afficherStatus("<i class='fa-solid fa-wifi me-2'></i>Erreur de connexion au serveur", "danger");
     throw e;
   }
-  
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    // Stocker xhr globalement pour permettre l'annulation
-    if (window.sendding) {
-      window.sendding.xhrGlobal = xhr;
-    }
-    
-    xhr.open("PUT", `${VITAM_PROXY_URL}&action=envoi`);
-    xhr.withCredentials = true;
-    xhr.setRequestHeader("X-File-Name", fichier.name);
-    xhr.setRequestHeader("X-Force-Replace", "1");
-    xhr.setRequestHeader("Content-Range", `bytes ${decalage}-${fichier.size-1}/${fichier.size}`);
-    
-    xhr.upload.onprogress = e => {
-      const pourcentage = Math.round(((decalage+e.loaded)/fichier.size)*100);
-      if (decalage > 0 && infoReprise) infoReprise.textContent = `Reprise à ${pourcentage}%`;
-      if (typeof onUploadProgress === 'function') onUploadProgress(pourcentage);
-    };
-    
-    xhr.onerror = () => {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-      reject(new Error('Erreur d\'envoi'));
-    };
-    
-    xhr.onabort = () => {
-      if (infoReprise) infoReprise.textContent = "";
-      if (typeof onUploadProgress === 'function') onUploadProgress(0);
-      reject(new Error('Envoi annulé'));
-    };
-    
-    xhr.onload = async () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        if (infoReprise) infoReprise.textContent = "";
-        if (typeof onUploadProgress === 'function') onUploadProgress(100);
-        await mettreAJourStatutPaquet(fichier.name, 7, true); 
-        // 3. Calculer le MD5 du nouveau fichier après l'envoi
-        if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
-        resolve();
-      } else {
-        if (infoReprise) infoReprise.textContent = "";
-        if (typeof onUploadProgress === 'function') onUploadProgress(0);
-        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-        reject(new Error('Erreur HTTP'));
-      }
-    };
-    
-    xhr.send(fichier.slice(decalage));
+
+  await uploaderViaXhr({
+    fichier,
+    decalage,
+    extraHeaders: { 'X-Force-Replace': '1' },
+    onUploadProgress
   });
+  await mettreAJourStatutPaquet(fichier.name, 7, true);
+  if (typeof window.calculerMD5Distant === 'function') window.calculerMD5Distant();
 }

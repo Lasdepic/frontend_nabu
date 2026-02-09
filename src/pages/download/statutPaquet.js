@@ -43,6 +43,7 @@ export async function mettreAJourStatutPaquet(nomFichier, statut, autoCreate = f
       // Demander à l'utilisateur s'il veut le créer
       // Afficher une card de confirmation
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
+      document.getElementById('paquet-modal-overlay-upload')?.remove();
       // On crée une card personnalisée pour ce cas
       const overlay = document.createElement('div');
       overlay.id = 'paquet-modal-overlay-upload';
@@ -93,9 +94,9 @@ export async function mettreAJourStatutPaquet(nomFichier, statut, autoCreate = f
       const btnAnnuler = document.createElement('button');
       btnAnnuler.className = 'btn btn-outline-secondary';
       btnAnnuler.textContent = 'Annuler';
-        btnAnnuler.onclick = async () => {
-          overlay.remove();
-          const { afficherStatus } = await import('./helpersUI.js');
+      btnAnnuler.onclick = async () => {
+        overlay.remove();
+        const { afficherStatus } = await import('./helpersUI.js');
         afficherStatus('Envoi annulé. Le paquet doit être créé avant l’envoi.', 'warning');
       };
       modalFooter.appendChild(btnCreer);

@@ -29,6 +29,11 @@ export async function calculerMD5Local() {
         if (md5LocalTxt) md5LocalTxt.textContent = "";
         // hash calculé, stocké dans le champ caché (input hidden)
         if (md5Local) md5Local.value = hash;
+        try {
+          window.dispatchEvent(new CustomEvent('md5local:ready', {
+            detail: { md5: hash, fileName: fichier.name }
+          }));
+        } catch {}
         if (md5LocalProgress) md5LocalProgress.style.width = '100%';
         if (typeof window.comparerMD5 === 'function') window.comparerMD5();
         resolve();
