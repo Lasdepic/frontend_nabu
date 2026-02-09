@@ -342,6 +342,15 @@ async function gererEnvoi() {
             await mettreAJourStatutPaquet(fichier.name, 4);
             const resultat = await envoyerAuCinesImmediat(fichier.name);
             if (resultat?.status === 'success' && resultat?.itemid) {
+              try {
+                const { createHistoriqueEnvoi } = await import('../../API/paquet/historiqueEnvoi.js');
+                const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
+                const paquetCote = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
+                await createHistoriqueEnvoi({ itemsId: resultat.itemid, paquetCote });
+              } catch (e) {
+                console.warn("Impossible d'enregistrer l'historique d'envoi", e);
+              }
+
               const etat = document.getElementById('etatUpload');
               if (etat) {
                 etat.className = 'alert alert-info text-center';
@@ -406,6 +415,17 @@ async function gererEnvoi() {
             const resultat = await programmerEnvoiCinesDiffere(fichier.name);
             const etat = document.getElementById('etatUpload');
             if (resultat?.status === 'success') {
+              if (resultat?.itemid) {
+                try {
+                  const { createHistoriqueEnvoi } = await import('../../API/paquet/historiqueEnvoi.js');
+                  const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
+                  const paquetCote = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
+                  await createHistoriqueEnvoi({ itemsId: resultat.itemid, paquetCote });
+                } catch (e) {
+                  console.warn("Impossible d'enregistrer l'historique d'envoi", e);
+                }
+              }
+
               if (etat) {
                 etat.className = 'alert alert-success text-center';
                 etat.innerHTML = "<i class='fa-solid fa-check me-2'></i>Mise en place de l'envoi différé OK";
