@@ -1,5 +1,5 @@
 
-const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
+const VITAM_PROXY_URL = 'backend_nabu/index.php?vitam-proxy=1';
 
 export function getVitamProxyUrl(action) {
   return `${VITAM_PROXY_URL}&action=${encodeURIComponent(action)}`;
