@@ -203,7 +203,7 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 					   window.afficherTableauPaquet('tableau-paquet-conteneur');
 				   } else {
 					   try {
-						   const module = await import('../tableauPaquet.js');
+						   const module = await import('../home/tableauPaquet.js');
 						   if (module && typeof module.afficherTableauPaquet === 'function') {
 							   module.afficherTableauPaquet('tableau-paquet-conteneur');
 						   } else if (window.reloadTableauPaquet) {
@@ -214,7 +214,7 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 				   try {
 					   let toDoFn = window.afficherTableauToDoPaquet;
 					   if (!toDoFn) {
-						   const toDoModule = await import('../toDo.js');
+						   const toDoModule = await import('../home/toDo.js');
 						   toDoFn = toDoModule.afficherTableauToDoPaquet;
 					   }
 					   if (typeof toDoFn === 'function') {
@@ -224,7 +224,7 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 				   try {
 					   let sendErrorFn = window.afficherSendErrorPaquet;
 					   if (!sendErrorFn) {
-						   const sendErrorModule = await import('../sendError.js');
+						   const sendErrorModule = await import('../home/sendError.js');
 						   sendErrorFn = sendErrorModule.afficherSendErrorPaquet;
 					   }
 					   if (typeof sendErrorFn === 'function') {

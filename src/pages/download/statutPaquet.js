@@ -1,5 +1,5 @@
 // Mise à jour du statut du paquet
-export async function mettreAJourStatutPaquet(nomFichier, statut) {
+export async function mettreAJourStatutPaquet(nomFichier, statut, autoCreate = false) {
   let cote = nomFichier.endsWith('.zip') ? nomFichier.slice(0, -4) : nomFichier;
   if (cote.toUpperCase().startsWith('SIP_')) {
     cote = cote.slice(4);
@@ -12,7 +12,35 @@ export async function mettreAJourStatutPaquet(nomFichier, statut) {
     }
     const result = await modulePaquet.fetchOnePaquet(cote);
     if (!result || !result.success || !result.data) {
-      // Paquet non trouvé, demander à l'utilisateur s'il veut le créer
+      // Paquet non trouvé
+      if (autoCreate) {
+        // Création automatique du paquet 
+        console.log('[mettreAJourStatutPaquet] Création automatique du paquet', cote);
+        if (!modulePaquet?.createPaquet) {
+          console.error('[mettreAJourStatutPaquet] createPaquet non trouvé');
+          return;
+        }
+        const nouveauPaquet = {
+          cote: cote,
+          statusId: statut,
+          statut: statut,
+          corpusId: 1, 
+          typeDocumentId: 1 
+        };
+        const resCreate = await modulePaquet.createPaquet(nouveauPaquet);
+        if (!resCreate || !resCreate.success) {
+          console.error('[mettreAJourStatutPaquet] Échec de la création automatique du paquet', resCreate);
+          // Afficher un message d'erreur à l'utilisateur
+          const { afficherStatus } = await import('./helpersUI.js');
+          afficherStatus(`Erreur lors de la création automatique du paquet ${cote}. Veuillez le créer manuellement.`, 'danger');
+        } else {
+          console.log('[mettreAJourStatutPaquet] Paquet créé automatiquement avec succès', resCreate);
+          const { afficherStatus } = await import('./helpersUI.js');
+          afficherStatus(`<i class='fa-solid fa-check-circle me-2'></i>Paquet <strong>${cote}</strong> créé et envoyé avec succès !`, 'success');
+        }
+        return;
+      }
+      // Demander à l'utilisateur s'il veut le créer
       // Afficher une card de confirmation
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
       // On crée une card personnalisée pour ce cas
@@ -65,10 +93,9 @@ export async function mettreAJourStatutPaquet(nomFichier, statut) {
       const btnAnnuler = document.createElement('button');
       btnAnnuler.className = 'btn btn-outline-secondary';
       btnAnnuler.textContent = 'Annuler';
-      btnAnnuler.onclick = () => {
-        overlay.remove();
-        // Afficher un message d'annulation
-        const { afficherStatus } = require('./helpersUI.js');
+        btnAnnuler.onclick = async () => {
+          overlay.remove();
+          const { afficherStatus } = await import('./helpersUI.js');
         afficherStatus('Envoi annulé. Le paquet doit être créé avant l’envoi.', 'warning');
       };
       modalFooter.appendChild(btnCreer);

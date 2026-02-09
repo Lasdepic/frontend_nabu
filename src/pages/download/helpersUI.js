@@ -1,16 +1,24 @@
 // Fonctions utilitaires pour l'UI
-export function afficherSpinner(id, afficher = true) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = afficher ? "inline-block" : "none";
-}
-
 export function afficherStatus(message, type = "secondary") {
   const zone = document.getElementById('zoneStatus');
   if (zone) {
     zone.className = `alert alert-${type} text-center mb-3`;
-    zone.innerHTML = `<i class='fa-solid fa-info-circle me-2'></i>${message}`;
-    zone.style.display = '';
+    zone.innerHTML = message;
+    zone.classList.remove('d-none');
     zone.removeAttribute('hidden');
+    
+    // Animation d'entrée
+    zone.style.animation = 'fadeIn 0.3s ease-in';
+    
+    // Auto-masquer les messages de succès après 5 secondes
+    if (type === 'success') {
+      setTimeout(() => {
+        zone.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+          zone.classList.add('d-none');
+        }, 300);
+      }, 5000);
+    }
   }
 }
 

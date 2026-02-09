@@ -3,13 +3,16 @@ import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
 
-const URL_API = 'https://vitam.scdi-montpellier.fr:8443/';
-const JETON_API = '800HxwzchfvLh9E8YjXf5UfGDaJ8Iz3UG0v2T7dwDMZByzcsOAfw10uS98rY0RqR';
+const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
 
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
 chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
   .then(initialiserUI);
+
+window.sendding = {
+  xhrGlobal: null
+};
 
 /* ===============================
    UI
@@ -35,14 +38,10 @@ async function initialiserUI() {
 
 
   const container = document.createElement('div');
-  container.className = 'container d-flex justify-content-center align-items-center';
-  container.style.height = '100vh';
-  container.style.overflowY = 'hidden';
+  container.className = 'container d-flex justify-content-center align-items-center sendding-container';
 
   const card = document.createElement('div');
-  card.className = 'card border-0 shadow-lg w-100 animate__animated animate__fadeIn';
-  card.style.maxWidth = '600px';
-  card.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%)';
+  card.className = 'card border-0 shadow-lg w-100 sendding-card animate__animated animate__fadeIn';
 
   card.innerHTML = `
     <div class="card-header bg-gradient bg-primary text-white text-center py-4 rounded-top">
@@ -53,19 +52,36 @@ async function initialiserUI() {
     </div>
 
     <div class="card-body p-0">
-      <div class="mb-4" style="padding: 1.5rem;">
+      <div class="mb-4 p-4">
         <label class="form-label fw-semibold">
           <i class="fa-solid fa-folder-open me-1 text-secondary"></i>
           Fichier ZIP
         </label>
-        <input type="file" id="inputFichier" class="form-control form-control-lg border-2" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
+        <div id="dropZone" class="border-2 border-dashed rounded p-4 text-center mb-2">
+          <i class="fa-solid fa-cloud-upload-alt fa-3x text-secondary mb-2"></i>
+          <p class="mb-2 fw-semibold">Glissez-déposez votre fichier ZIP ici</p>
+          <p class="text-muted small mb-2">ou</p>
+          <input type="file" id="inputFichier" class="form-control form-control-lg border-2 d-none" accept=".zip" ${!isAdmin ? 'disabled' : ''}>
+          <button type="button" id="btnSelectFile" class="btn btn-outline-primary" ${!isAdmin ? 'disabled' : ''}>
+            <i class="fa-solid fa-folder-open me-2"></i>Parcourir
+          </button>
+        </div>
+        <div id="selectedFile" class="d-none alert alert-info py-2 px-3 d-flex align-items-center justify-content-between">
+          <div>
+            <i class="fa-solid fa-file-zipper me-2"></i>
+            <span id="fileName" class="fw-semibold"></span>
+            <span id="fileSize" class="text-muted small ms-2"></span>
+          </div>
+          <button type="button" id="btnClearFile" class="btn btn-sm btn-outline-danger" ${!isAdmin ? 'disabled' : ''}>
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
         <div class="form-text">Format accepté : <span class="badge bg-secondary">.zip</span></div>
       </div>
 
-      <div style="padding: 0 1.5rem;">
+      <div class="px-4">
         <button id="btnEnvoyer"
                 class="btn btn-success btn-lg w-100 fw-semibold mb-4 d-flex justify-content-center align-items-center gap-2 shadow-sm"
-                style="letter-spacing:0.5px;"
                 ${!isAdmin ? 'disabled' : ''}>
           <i class="fa-solid fa-cloud-arrow-up"></i>
           <span>Envoyer le fichier</span>
@@ -80,29 +96,48 @@ async function initialiserUI() {
             Accès réservé aux administrateurs
           </div>` : ''}
 
-        <div id="md5LocalContainer" class="mb-4 d-none">
-          <label class="form-label small fw-semibold text-muted">Empreinte MD5 (local)</label>
-          <div class="progress" style="height:10px;">
-            <div id="md5LocalProgress"
-                 class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                 style="width:0%"
-                 aria-valuemin="0"
-                 aria-valuemax="100"></div>
+        <div id="progressContainer" class="mb-4 d-none">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label small fw-semibold text-muted mb-0">
+                <i class="fa-solid fa-hashtag me-1"></i>
+                Calcul MD5 local
+              </label>
+              <span id="md5Status" class="badge bg-secondary">En attente...</span>
+            </div>
+            <div class="progress progress-sm">
+              <div id="md5ProgressBar"
+                   class="progress-bar bg-info"
+                   role="progressbar"
+                   style="width:0%;"
+                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
           </div>
-          <small id="md5LocalTxt" class="text-muted d-block mt-1"></small>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label small fw-semibold text-muted mb-0">
+                <i class="fa-solid fa-cloud-upload-alt me-1"></i>
+                Envoi du fichier
+              </label>
+              <span id="uploadStatus" class="badge bg-secondary">En attente...</span>
+            </div>
+            <div class="progress progress-sm">
+              <div id="uploadProgressBar"
+                   class="progress-bar bg-success"
+                   role="progressbar"
+                   style="width:0%;"
+                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <small id="progressTxt" class="text-muted"></small>
+            <button id="btnCancelUpload" class="btn btn-sm btn-outline-danger">
+              <i class="fa-solid fa-times me-1"></i>Annuler
+            </button>
+          </div>
           <input id="md5Local" type="hidden">
-        </div>
-
-        <div id="uploadProgressContainer" class="mb-3 d-none">
-          <label class="form-label small fw-semibold text-muted">Envoi vers le serveur</label>
-          <div class="progress" style="height:10px;">
-            <div id="uploadProgress"
-                 class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                 style="width:0%"
-                 aria-valuemin="0"
-                 aria-valuemax="100"></div>
-          </div>
-          <small id="uploadProgressTxt" class="text-muted d-block mt-1"></small>
         </div>
       </div>
     </div>
@@ -117,49 +152,307 @@ async function initialiserUI() {
   document.body.appendChild(container);
 
   if (isAdmin) {
+    configurerGestionFichier();
     document.getElementById('btnEnvoyer').onclick = gererEnvoi;
+  }
+}
+
+/* ===============================
+   Gestion des fichiers (drag & drop)
+================================ */
+function configurerGestionFichier() {
+  const dropZone = document.getElementById('dropZone');
+  const inputFichier = document.getElementById('inputFichier');
+  const btnSelectFile = document.getElementById('btnSelectFile');
+  const btnClearFile = document.getElementById('btnClearFile');
+  const selectedFile = document.getElementById('selectedFile');
+  const fileName = document.getElementById('fileName');
+  const fileSize = document.getElementById('fileSize');
+
+  // Parcourir les fichiers
+  btnSelectFile.onclick = () => inputFichier.click();
+
+  // Sélection de fichier
+  inputFichier.onchange = () => {
+    if (inputFichier.files[0]) {
+      afficherFichierSelectionne(inputFichier.files[0]);
+    }
+  };
+
+  // Effacer le fichier
+  btnClearFile.onclick = () => {
+    inputFichier.value = '';
+    selectedFile.classList.add('d-none');
+    dropZone.classList.remove('d-none');
+    document.getElementById('btnEnvoyer').disabled = false;
+  };
+
+  // Drag & Drop
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.add('drop-zone-hover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.remove('drop-zone-hover');
+    });
+  });
+
+  dropZone.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.name.endsWith('.zip')) {
+        inputFichier.files = files;
+        afficherFichierSelectionne(file);
+      } else {
+        afficherStatus('Veuillez déposer un fichier ZIP.', 'warning');
+      }
+    }
+  });
+
+  function afficherFichierSelectionne(file) {
+    fileName.textContent = file.name;
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    fileSize.textContent = `(${sizeMB} MB)`;
+    dropZone.classList.add('d-none');
+    selectedFile.classList.remove('d-none');
   }
 }
 
 /* ===============================
    Envoi
 ================================ */
+let uploadEnCours = false;
+
+async function envoyerAuCinesImmediat(nomFichier) {
+  const etat = document.getElementById('etatUpload');
+  if (etat) {
+    etat.className = 'alert alert-info text-center';
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi au CINES...";
+  }
+
+  const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-immediat`, {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    },
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erreur HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data;
+}
+
+async function programmerEnvoiCinesDiffere(nomFichier) {
+  const etat = document.getElementById('etatUpload');
+  if (etat) {
+    etat.className = 'alert alert-info text-center';
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Mise en place de l’envoi différé...";
+  }
+
+  const res = await fetch(`${VITAM_PROXY_URL}&action=programmation-differe`, {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    },
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    throw new Error(`Erreur HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+async function verifierStatutCines(itemid, { intervalMs = 5000, maxTries = 60 } = {}) {
+  for (let i = 0; i < maxTries; i++) {
+    const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-statut`, {
+      method: 'GET',
+      headers: {
+        'X-Item-Id': itemid
+      },
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erreur HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data?.status && data.status !== 'ENVOI_EN_COURS') {
+      return data;
+    }
+
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+
+  return { status: 'STATUT_NON_DISPONIBLE', message: "Délai dépassé pour la vérification d'état." };
+}
+
 async function gererEnvoi() {
   const bouton = document.getElementById('btnEnvoyer');
   const input = document.getElementById('inputFichier');
   const fichier = input.files[0];
+  const progressContainer = document.getElementById('progressContainer');
 
   if (!fichier) {
-    afficherStatus('Veuillez sélectionner un fichier ZIP.', 'danger');
+    afficherStatus('Veuillez sélectionner un fichier ZIP.', 'warning');
     return;
   }
 
+  uploadEnCours = true;
   bouton.disabled = true;
   bouton.innerHTML = `
-    <span class="spinner-border spinner-border-sm"></span>
-    <span>Envoi en cours…</span>
+    <span class="spinner-border spinner-border-sm me-2"></span>
+    <span>Traitement en cours…</span>
   `;
 
-  let md5Ok = false;
-  let uploadOk = false;
+  let operationTerminee = false;
+  let stopMd5 = false;
 
   const majSucces = () => {
-    if (md5Ok && uploadOk) {
-      afficherStatus(`Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
+    if (operationTerminee) {
+      uploadEnCours = false;
+      afficherStatus(`<i class="fa-solid fa-check-circle me-2"></i>Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
+
       const etat = document.getElementById('etatUpload');
-      etat.textContent = '';
-      etat.className = 'alert d-none text-center';
+      if (etat) {
+        etat.className = 'alert alert-light text-center';
+        etat.innerHTML = `
+          <div class='fw-semibold mb-2'>Envoyer le paquet au CINES ?</div>
+          <div id='cines' class='d-flex gap-2 justify-content-center flex-wrap'>
+            <button type='button' id='btnCinesImmediat' class='btn btn-success btn-sm px-4 fw-bold'>Immédiat</button>
+            <button type='button' id='btnCinesDiffere' class='btn btn-outline-secondary btn-sm px-4 fw-bold'>Différé</button>
+          </div>
+          <div id='cines_status' class='small text-muted mt-2'></div>
+        `;
+      }
+
+      const btnImmediat = document.getElementById('btnCinesImmediat');
+      const btnDiffere = document.getElementById('btnCinesDiffere');
+      const cinesStatus = document.getElementById('cines_status');
+
+      const verrouillerChoix = (locked) => {
+        if (btnImmediat) btnImmediat.disabled = locked;
+        if (btnDiffere) btnDiffere.disabled = locked;
+      };
+
+      const nettoyerEtReset = () => {
+        setTimeout(() => {
+          const etat = document.getElementById('etatUpload');
+          if (etat) {
+            etat.textContent = '';
+            etat.className = 'alert d-none text-center';
+          }
+          if (progressContainer) progressContainer.classList.add('d-none');
+          reinitialiserFormulaire();
+        }, 2000);
+      };
+
+      if (btnImmediat) {
+        btnImmediat.onclick = async () => {
+          verrouillerChoix(true);
+          try {
+            const resultat = await envoyerAuCinesImmediat(fichier.name);
+            if (resultat?.status === 'success' && resultat?.itemid) {
+              const etat = document.getElementById('etatUpload');
+              if (etat) {
+                etat.className = 'alert alert-info text-center';
+                etat.innerHTML = `
+                  <div class='fw-semibold mb-1'><i class='fa-solid fa-paper-plane me-2'></i>Envoi au CINES lancé</div>
+                  <div class='small'>Message : ${resultat.message ?? ''}</div>
+                  <div class='small'>itemid : ${resultat.itemid}</div>
+                `;
+              }
+
+              const statut = await verifierStatutCines(resultat.itemid);
+              const etatFinal = document.getElementById('etatUpload');
+              if (etatFinal) {
+                if (statut?.status === 'ENVOI_OK') {
+                  etatFinal.className = 'alert alert-success text-center';
+                  etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Envoi CINES terminé (OK).";
+                } else if (statut?.status === 'ENVOI_EN_COURS') {
+                  etatFinal.className = 'alert alert-info text-center';
+                  etatFinal.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi CINES en cours...";
+                } else {
+                  etatFinal.className = 'alert alert-warning text-center';
+                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
+                }
+              }
+            } else {
+              const etat = document.getElementById('etatUpload');
+              if (etat) {
+                etat.className = 'alert alert-danger text-center';
+                etat.innerHTML = `${resultat?.message ?? "Erreur lors de l'envoi au CINES."}${resultat?.output ? `<br/>${resultat.output}` : ''}`;
+              }
+            }
+          } catch (e) {
+            const etat = document.getElementById('etatUpload');
+            if (etat) {
+              etat.className = 'alert alert-danger text-center';
+              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de l'envoi immédiat au CINES.";
+            }
+          } finally {
+            nettoyerEtReset();
+          }
+        };
+      }
+
+      if (btnDiffere) {
+        btnDiffere.onclick = async () => {
+          verrouillerChoix(true);
+          if (cinesStatus) cinesStatus.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Programmation du différé...";
+          try {
+            const resultat = await programmerEnvoiCinesDiffere(fichier.name);
+            const etat = document.getElementById('etatUpload');
+            if (resultat?.status === 'success') {
+              if (etat) {
+                etat.className = 'alert alert-success text-center';
+                etat.innerHTML = "<i class='fa-solid fa-check me-2'></i>Mise en place de l'envoi différé OK";
+              }
+            } else {
+              if (etat) {
+                etat.className = 'alert alert-warning text-center';
+                etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Impossible de mettre en place l'envoi différé";
+                if (resultat?.error) {
+                  etat.innerHTML += `<br/>${resultat.error}`;
+                }
+              }
+            }
+          } catch (e) {
+            const etat = document.getElementById('etatUpload');
+            if (etat) {
+              etat.className = 'alert alert-danger text-center';
+              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de la programmation du différé.";
+            }
+          } finally {
+            nettoyerEtReset();
+          }
+        };
+      }
     }
   };
 
   try {
-    // Afficher la barre de progression MD5
-    const md5Container = document.getElementById('md5LocalContainer');
-    if (md5Container) md5Container.classList.remove('d-none');
-    // Cacher la barre d'upload au début
-    const uploadContainerInit = document.getElementById('uploadProgressContainer');
-    if (uploadContainerInit) uploadContainerInit.classList.add('d-none');
-    // Vérifier si le paquet existe avant de continuer
+    if (progressContainer) progressContainer.classList.remove('d-none');
     const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
     let coteSansPrefix = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
     const modulePaquet = await import('../../API/paquet/paquet.js');
@@ -174,9 +467,7 @@ async function gererEnvoi() {
     }
     const result = await modulePaquet.fetchOnePaquet(coteSansPrefix);
     if (!result || !result.success || !result.data) {
-      // Afficher la card de création paquet et stopper l'envoi
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
-      // On crée une card personnalisée pour ce cas
       const overlay = document.createElement('div');
       overlay.id = 'paquet-modal-overlay-upload';
       overlay.className = 'modal fade show';
@@ -187,12 +478,10 @@ async function gererEnvoi() {
       overlay.style.left = 0;
       overlay.style.width = '100vw';
       overlay.style.height = '100vh';
-      overlay.style.zIndex = 3000;
+      overlay.style.zIndex = 2000;
 
       const modal = document.createElement('div');
       modal.className = 'modal-dialog modal-dialog-centered';
-      modal.style.maxWidth = '500px';
-      modal.style.width = '100%';
 
       const modalContent = document.createElement('div');
       modalContent.className = 'modal-content shadow-lg';
@@ -221,7 +510,6 @@ async function gererEnvoi() {
       btnCreer.textContent = 'Créer le paquet';
       btnCreer.onclick = () => {
         overlay.remove();
-        // Préremplir le nom de dossier et la cote avec le nom du fichier (sans .zip et sans SIP_)
         const defaultName = coteSansPrefix;
         afficherCardPaquetAddModal({
           folderName: defaultName,
@@ -254,75 +542,191 @@ async function gererEnvoi() {
       `;
       return;
     }
+    const md5ProgressBar = document.getElementById('md5ProgressBar');
+    const uploadProgressBar = document.getElementById('uploadProgressBar');
+    const md5Status = document.getElementById('md5Status');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const btnCancelUpload = document.getElementById('btnCancelUpload');
+    const md5Local = document.getElementById('md5Local');
 
-    // MD5
+    let md5Pourcentage = 0;
+    let uploadPourcentage = 0;
+    let md5Termine = false;
+    let uploadTermine = false;
+    let erreur = false;
 
-    document.getElementById('md5LocalTxt').textContent = 'Calcul MD5 en cours…';
-    await calculerMD5Local();
-
-    const md5Bar = document.getElementById('md5LocalProgress');
-    const observer = new MutationObserver(() => {
-      const pct = parseInt(md5Bar.style.width);
-      if (!isNaN(pct)) {
-        md5Bar.setAttribute('aria-valuenow', pct);
-        document.getElementById('md5LocalTxt').textContent = `MD5 : ${pct}%`;
+    // Gestion de l'annulation
+    btnCancelUpload.onclick = () => {
+      if (window.sendding.xhrGlobal) {
+        window.sendding.xhrGlobal.abort();
       }
-      if (pct === 100) {
-        md5Ok = true;
-        document.getElementById('md5LocalTxt').textContent = 'MD5 calculé.';
-        observer.disconnect();
-          // Cacher la barre de progression MD5 comme l'upload
-          const md5Container = document.getElementById('md5LocalContainer');
-          if (md5Container) md5Container.classList.add('d-none');
-          majSucces();
-      }
-    });
-    observer.observe(md5Bar, { attributes: true });
-    // Masquer la barre MD5 si le calcul est déjà terminé (sécurité)
-    if (md5Bar.style.width === '100%') {
-      const md5Container = document.getElementById('md5LocalContainer');
-      if (md5Container) md5Container.classList.add('d-none');
-    }
-
-
-    // Afficher la barre de progression upload
-    const uploadContainerShow = document.getElementById('uploadProgressContainer');
-    if (uploadContainerShow) uploadContainerShow.classList.remove('d-none');
-
-    // Upload
-    const onUploadProgress = (pct) => {
-      const bar = document.getElementById('uploadProgress');
-      const txt = document.getElementById('uploadProgressTxt');
-      bar.style.width = pct + '%';
-      bar.setAttribute('aria-valuenow', pct);
-      txt.textContent = pct < 100 ? `Upload : ${pct}%` : 'Upload terminé';
-      if (pct === 100) {
-        uploadOk = true;
-        // Cacher la barre de progression upload
-        const uploadContainerHide = document.getElementById('uploadProgressContainer');
-        if (uploadContainerHide) uploadContainerHide.classList.add('d-none');
-        majSucces();
-      }
+      stopMd5 = true;
+      uploadEnCours = false;
+      if (progressContainer) progressContainer.classList.add('d-none');
+      afficherStatus('Envoi annulé par l\'utilisateur.', 'warning');
+      reinitialiserFormulaire();
     };
 
-    const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
+    function updateProgressBar() {
+      md5ProgressBar.style.width = md5Pourcentage + '%';
+      md5ProgressBar.setAttribute('aria-valuenow', md5Pourcentage);
+      
+      uploadProgressBar.style.width = uploadPourcentage + '%';
+      uploadProgressBar.setAttribute('aria-valuenow', uploadPourcentage);
+      
+      // Mise à jour des badges de statut
+      if (md5Pourcentage === 100) {
+        md5Status.textContent = 'Terminé';
+        md5Status.className = 'badge bg-success';
+        md5ProgressBar.classList.remove('uploading-animation');
+      } else if (md5Pourcentage > 0) {
+        md5Status.textContent = md5Pourcentage + '%';
+        md5Status.className = 'badge bg-info';
+        md5ProgressBar.classList.add('uploading-animation');
+      }
+      
+      if (uploadPourcentage === 100) {
+        uploadStatus.textContent = 'Terminé';
+        uploadStatus.className = 'badge bg-success';
+        uploadProgressBar.classList.remove('uploading-animation');
+      } else if (uploadPourcentage > 0) {
+        uploadStatus.textContent = uploadPourcentage + '%';
+        uploadStatus.className = 'badge bg-primary';
+        uploadProgressBar.classList.add('uploading-animation');
+      }
+    }
+    
+    const inputFichier = document.getElementById('inputFichier');
+    const fichierAEnvoyer = inputFichier.files[0];
+    const tailleMorceau = 2 * 1024 * 1024;
+    const nombreMorceaux = Math.ceil(fichierAEnvoyer.size / tailleMorceau);
+    let morceauActuel = 0;
+    const calculateurMD5 = new window.SparkMD5.ArrayBuffer();
+    const lecteur = new FileReader();
 
-    await envoyerFichier(
-      URL_API,
-      JETON_API,
+    // Initialiser les statuts
+    md5Status.textContent = 'En cours...';
+    md5Status.className = 'badge bg-info';
+    uploadStatus.textContent = 'En cours...';
+    uploadStatus.className = 'badge bg-primary';
+
+    function calculerMD5EnParallele() {
+      if (stopMd5) return;
+      if (morceauActuel >= nombreMorceaux) {
+        md5Termine = true;
+        md5Pourcentage = 100;
+        if (md5Local) md5Local.value = calculateurMD5.end();
+        updateProgressBar();
+        if (uploadTermine) {
+          operationTerminee = true;
+          progressContainer.classList.add('d-none');
+          majSucces();
+        }
+        return;
+      }
+      const debut = morceauActuel * tailleMorceau;
+      const fin = Math.min(debut + tailleMorceau, fichierAEnvoyer.size);
+      lecteur.onload = e => {
+        if (stopMd5) return;
+        calculateurMD5.append(e.target.result);
+        morceauActuel++;
+        md5Pourcentage = Math.ceil(morceauActuel * 100 / nombreMorceaux);
+        updateProgressBar();
+        calculerMD5EnParallele();
+      };
+      lecteur.readAsArrayBuffer(fichierAEnvoyer.slice(debut, fin));
+    }
+
+    // Upload en parallèle du calcul MD5
+    const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
+    envoyerFichier(
       importerCardConfirm,
       envoyerFichierAvecRemplacement,
       mettreAJourStatutPaquet,
-      onUploadProgress
-    );
+      (pct) => {
+        uploadPourcentage = pct;
+        if (pct === 100) {
+          uploadTermine = true;
+          if (md5Termine) {
+            operationTerminee = true;
+            progressContainer.classList.add('d-none');
+            majSucces();
+          }
+        }
+        updateProgressBar();
+      }
+    ).catch((e) => {
+      erreur = true;
+      stopMd5 = true;
+      uploadEnCours = false;
+      uploadPourcentage = 0;
+      updateProgressBar();
+      if (progressContainer) progressContainer.classList.add('d-none');
+      if (e?.message !== 'Envoi annulé') {
+        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Échec de l'envoi.", 'danger');
+      }
+      reinitialiserFormulaire();
+    });
+
+    calculerMD5EnParallele();
 
   } catch (e) {
-    afficherStatus('Erreur lors de l’envoi du fichier.', 'danger');
+    stopMd5 = true;
+    uploadEnCours = false;
+    afficherStatus('<i class="fa-solid fa-exclamation-triangle me-2"></i>Erreur lors de l\'envoi du fichier.', 'danger');
+    if (progressContainer) progressContainer.classList.add('d-none');
+    reinitialiserFormulaire();
   } finally {
-    bouton.disabled = false;
-    bouton.innerHTML = `
-      <i class="fa-solid fa-cloud-arrow-up"></i>
-      <span>Envoyer le fichier</span>
-    `;
+    if (!uploadEnCours) {
+      bouton.disabled = false;
+      bouton.innerHTML = `
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Envoyer le fichier</span>
+      `;
+    }
   }
 }
+
+/* ===============================
+   Réinitialisation
+================================ */
+function reinitialiserFormulaire() {
+  const bouton = document.getElementById('btnEnvoyer');
+  const input = document.getElementById('inputFichier');
+  const selectedFile = document.getElementById('selectedFile');
+  const dropZone = document.getElementById('dropZone');
+  const md5Local = document.getElementById('md5Local');
+  const md5ProgressBar = document.getElementById('md5ProgressBar');
+  const uploadProgressBar = document.getElementById('uploadProgressBar');
+  const md5Status = document.getElementById('md5Status');
+  const uploadStatus = document.getElementById('uploadStatus');
+  
+  bouton.disabled = false;
+  bouton.innerHTML = `
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+    <span>Envoyer le fichier</span>
+  `;
+  
+  if (input) input.value = '';
+  if (md5Local) md5Local.value = '';
+  if (selectedFile) selectedFile.classList.add('d-none');
+  if (dropZone) dropZone.classList.remove('d-none');
+  
+  if (md5ProgressBar) {
+    md5ProgressBar.style.width = '0%';
+    md5ProgressBar.setAttribute('aria-valuenow', 0);
+  }
+  if (uploadProgressBar) {
+    uploadProgressBar.style.width = '0%';
+    uploadProgressBar.setAttribute('aria-valuenow', 0);
+  }
+  if (md5Status) {
+    md5Status.textContent = 'En attente...';
+    md5Status.className = 'badge bg-secondary';
+  }
+  if (uploadStatus) {
+    uploadStatus.textContent = 'En attente...';
+    uploadStatus.className = 'badge bg-secondary';
+  }
+}
+

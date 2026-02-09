@@ -1,5 +1,4 @@
 // Fonctions liées au calcul et à la comparaison des MD5
-import { afficherSpinner } from './helpersUI.js';
 
 export async function calculerMD5Local() {
   const input = document.getElementById('inputFichier');
@@ -51,7 +50,7 @@ export async function calculerMD5Distant(URL_API, JETON_API) {
   const md5Distant = document.getElementById('md5Distant');
   if (!input || !input.files[0]) return;
   const fichier = input.files[0];
-  if (md5DistantSpin) afficherSpinner('md5DistantSpin', true);
+  if (md5DistantSpin) md5DistantSpin.style.display = 'inline-block';
   if (md5DistantTxt) md5DistantTxt.textContent = "Demande en cours...";
   if (md5Distant) md5Distant.value = '';
   try {
@@ -60,12 +59,12 @@ export async function calculerMD5Distant(URL_API, JETON_API) {
     });
     if (!reponse.ok) throw new Error('Erreur réseau');
     const donnees = await reponse.json();
-    if (md5DistantSpin) afficherSpinner('md5DistantSpin', false);
+    if (md5DistantSpin) md5DistantSpin.style.display = 'none';
     if (md5DistantTxt) md5DistantTxt.textContent = "";
     if (md5Distant) md5Distant.value = donnees.md5 || "";
     if (typeof window.comparerMD5 === 'function') window.comparerMD5();
   } catch (e) {
-    if (md5DistantSpin) afficherSpinner('md5DistantSpin', false);
+    if (md5DistantSpin) md5DistantSpin.style.display = 'none';
     if (md5DistantTxt) md5DistantTxt.textContent = "Erreur serveur";
     if (md5Distant) md5Distant.value = '';
   }

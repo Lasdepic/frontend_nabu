@@ -1,5 +1,6 @@
 import { fetchOnePaquet, deletePaquet } from '../../API/paquet/paquet.js';
 import { fetchAllStatus } from '../../API/paquet/status.js';
+import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
 const STATUS_COLORS = {
 	INEXISTANT: 'dark',
@@ -12,6 +13,7 @@ const STATUS_COLORS = {
 };
 
 let STATUS_CACHE = null;
+let CORPUS_CACHE = null;
 
 async function getStatusById(statusId) {
 	if (!statusId) return null;
@@ -20,6 +22,17 @@ async function getStatusById(statusId) {
 		STATUS_CACHE = Array.isArray(result) ? result : [];
 	}
 	return STATUS_CACHE.find(s => s.idStatus == statusId) || null;
+}
+
+async function getCorpusNameById(corpusId) {
+	if (!corpusId) return null;
+	if (!CORPUS_CACHE) {
+		const result = await fetchAllCorpus();
+		const list = result?.data || result;
+		CORPUS_CACHE = Array.isArray(list) ? list : [];
+	}
+	const corpus = CORPUS_CACHE.find(c => (c.idcorpus ?? c.idCorpus) == corpusId) || null;
+	return (corpus?.name_corpus ?? corpus?.nameCorpus) || null;
 }
 
 function createStatusBadge(status) {
@@ -69,7 +82,7 @@ export async function afficherCardPaquetModal(paquet) {
 	content.className = 'modal-content';
 	content.innerHTML = `
 		<div class="modal-header">
-			<h5 class="modal-title fw-bold w-100 text-center">Information du paquet</h5>
+			<h5 class="modal-title fw-bold w-100 text-center">Informations du paquet</h5>
 			<button class="btn-close"></button>
 		</div>
 		<div class="modal-body"></div>
@@ -86,6 +99,10 @@ export async function afficherCardPaquetModal(paquet) {
 
 export async function createCardPaquet(paquet) {
 		const status = await getStatusById(paquet.statusId);
+		const corpusName =
+			(paquet?.corpusName ?? paquet?.name_corpus) ||
+			(await getCorpusNameById(paquet?.corpusId)) ||
+			'';
 		const card = document.createElement('div');
 		card.className = 'card shadow border-0';
 		const userRole = localStorage.getItem('userRole');
@@ -97,8 +114,8 @@ export async function createCardPaquet(paquet) {
 			       <ul class="list-group list-group-flush mb-3">
 				       <li class="list-group-item"><strong>Dossier :</strong> ${paquet.folderName ?? ''}</li>
 				       <li class="list-group-item"><strong>Cote :</strong> ${paquet.cote ?? ''}</li>
-				       <li class="list-group-item"><strong>Corpus :</strong> ${paquet.corpus ?? ''}</li>
-				       <li class="list-group-item"><strong>Répertoire des images microfilms :</strong> ${paquet.microFilmImage ?? ''}</li>
+				       <li class="list-group-item"><strong>Corpus :</strong> ${corpusName}</li>
+				       <li class="list-group-item"><strong>Répertoire des images autre :</strong> ${paquet.microFilmImage ?? ''}</li>
 				       <li class="list-group-item"><strong>Répertoire des images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
 				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
 				       <li class="list-group-item"><strong>Status :</strong> ${createStatusBadge(status)}</li>

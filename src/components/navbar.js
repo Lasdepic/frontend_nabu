@@ -1,7 +1,7 @@
 export function createNavbar(isLoginPage = false) {
     if (isLoginPage) {
         return `
-            <nav class="navbar navbar-expand-lg" style="background-color: #212529; padding: 0.5rem 1rem; min-height: 48px;">
+            <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #212529; padding: 0.5rem 1rem; min-height: 48px;">
                 <div class="container-fluid">
                     <div class="d-flex flex-column align-items-start">
                         <span class="navbar-brand nabu-title text-white fw-bold mb-0" style="line-height: 1; font-size: 1.7rem;">NABU</span>
@@ -12,13 +12,13 @@ export function createNavbar(isLoginPage = false) {
         `;
     }
     return `
-        <nav class="navbar navbar-expand-lg" style="background-color: #212529; padding: 0.5rem 1rem; min-height: 48px;">
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #212529; padding: 0.5rem 1rem; min-height: 48px;">
             <div class="container-fluid">
                 <div class="d-flex flex-column align-items-start">
                     <a class="navbar-brand nabu-title text-white fw-bold mb-0" href="index.html" style="line-height: 1; font-size: 1.7rem;">NABU</a>
                     <span class="nabu-title text-white" style="font-size: 0.85rem; font-weight: 400; margin-top: -0.2rem; letter-spacing: 0.5px;">SCDI de Montpellier</span>
                 </div>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler border border-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"><span></span></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">

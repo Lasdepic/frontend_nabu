@@ -52,4 +52,100 @@ input[type="number"] {
     margin-top: 10px !important;
 }
 
+/* Styles pour Sendding */
+.page-sendding {
+	background: #FFFFFF;
+	min-height: 100vh;
+}
+
+#dropZone {
+	transition: all 0.3s ease;
+	border-color: #dee2e6 !important;
+	background: #f8f9fa !important;
+	cursor: pointer;
+}
+
+#dropZone:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.progress {
+	border-radius: 10px;
+	overflow: hidden;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+	transition: width 0.3s ease;
+}
+
+@keyframes pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.5; }
+}
+
+.uploading-animation {
+	animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+}
+
+.sendding-container {
+	min-height: 100vh;
+	overflow-y: auto;
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+
+.sendding-card {
+	max-width: 600px;
+	background: linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%);
+}
+
+.drop-zone-hover {
+	border-color: #0d6efd !important;
+	background: #e7f1ff !important;
+}
+
+.progress-sm {
+	height: 8px;
+}
+
+.paquet-modal-overlay {
+	display: block;
+	background: rgba(0, 0, 0, 0.5);
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 3000;
+}
+
+.modal-dialog-center {
+	max-width: 500px;
+	width: 100%;
+}
+
 

@@ -1,4 +1,4 @@
-import { createCorpus } from '../../API/corpus.js';
+import { createCorpus } from '../../API/paquet/corpus.js';
 
 export function showCreateCorpusModal(onSuccess) {
 	const overlay = document.createElement('div');
