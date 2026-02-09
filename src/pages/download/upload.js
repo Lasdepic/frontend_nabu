@@ -84,21 +84,30 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
       afficherStatus(`<i class='fa-solid fa-info-circle me-2'></i>Le fichier <strong>${fichier.name}</strong> existe déjà sur le serveur avec un MD5 identique.`, "info");
       return;
     } else if (md5Distant) {
-      importerCardConfirm().then(({ afficherCardConfirm }) => {
-        const card = afficherCardConfirm({
-          nomFichier: fichier.name,
-          onConfirmer: () => {
-            document.getElementById('modalCardConfirm')?.remove();
-            envoyerFichierAvecRemplacement(fichier, mettreAJourStatutPaquet, onUploadProgress);
-          },
-          onAnnuler: () => {
-            document.getElementById('modalCardConfirm')?.remove();
-            afficherStatus("Envoi annulé par l'utilisateur.", "warning");
-          }
-        });
-        afficherModalConfirmation(card);
+      return new Promise((resolve, reject) => {
+        importerCardConfirm()
+          .then(({ afficherCardConfirm }) => {
+            const card = afficherCardConfirm({
+              nomFichier: fichier.name,
+              onConfirmer: async () => {
+                document.getElementById('modalCardConfirm')?.remove();
+                try {
+                  await envoyerFichierAvecRemplacement(fichier, mettreAJourStatutPaquet, onUploadProgress);
+                  resolve();
+                } catch (e) {
+                  reject(e);
+                }
+              },
+              onAnnuler: () => {
+                document.getElementById('modalCardConfirm')?.remove();
+                afficherStatus("Envoi annulé par l'utilisateur.", "warning");
+                reject(new Error('Envoi annulé'));
+              }
+            });
+            afficherModalConfirmation(card);
+          })
+          .catch(reject);
       });
-      return;
     }
   }
   if (statut === "error_exist_a_supprimer") {
@@ -152,8 +161,13 @@ export async function envoyerFichier(importerCardConfirm, envoyerFichierAvecRemp
       } else {
         if (infoReprise) infoReprise.textContent = "";
         if (typeof onUploadProgress === 'function') onUploadProgress(0);
+        if (xhr.status === 413) {
+          afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Fichier trop volumineux (413). La limite serveur doit être augmentée.", 'danger');
+          reject(new Error('413 Request Entity Too Large'));
+          return;
+        }
         afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Erreur d'envoi sur le serveur, veuillez réessayer.", "danger");
-        reject(new Error('Erreur HTTP'));
+        reject(new Error(`Erreur HTTP ${xhr.status}`));
       }
     };
     

@@ -239,6 +239,7 @@ async function gererEnvoi() {
   const bouton = document.getElementById('btnEnvoyer');
   const input = document.getElementById('inputFichier');
   const fichier = input.files[0];
+  const progressContainer = document.getElementById('progressContainer');
 
   if (!fichier) {
     afficherStatus('Veuillez sélectionner un fichier ZIP.', 'warning');
@@ -253,6 +254,7 @@ async function gererEnvoi() {
   `;
 
   let operationTerminee = false;
+  let stopMd5 = false;
 
   const majSucces = () => {
     if (operationTerminee) {
@@ -264,14 +266,13 @@ async function gererEnvoi() {
       
       // Animation de succès et réinitialisation
       setTimeout(() => {
-        progressContainer.classList.add('d-none');
+        if (progressContainer) progressContainer.classList.add('d-none');
         reinitialiserFormulaire();
       }, 2000);
     }
   };
 
   try {
-    const progressContainer = document.getElementById('progressContainer');
     if (progressContainer) progressContainer.classList.remove('d-none');
     const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
     let coteSansPrefix = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
@@ -372,8 +373,9 @@ async function gererEnvoi() {
       if (window.sendding.xhrGlobal) {
         window.sendding.xhrGlobal.abort();
       }
+      stopMd5 = true;
       uploadEnCours = false;
-      progressContainer.classList.add('d-none');
+      if (progressContainer) progressContainer.classList.add('d-none');
       afficherStatus('Envoi annulé par l\'utilisateur.', 'warning');
       reinitialiserFormulaire();
     };
@@ -422,6 +424,7 @@ async function gererEnvoi() {
     uploadStatus.className = 'badge bg-primary';
 
     function calculerMD5EnParallele() {
+      if (stopMd5) return;
       if (morceauActuel >= nombreMorceaux) {
         md5Termine = true;
         md5Pourcentage = 100;
@@ -437,6 +440,7 @@ async function gererEnvoi() {
       const debut = morceauActuel * tailleMorceau;
       const fin = Math.min(debut + tailleMorceau, fichierAEnvoyer.size);
       lecteur.onload = e => {
+        if (stopMd5) return;
         calculateurMD5.append(e.target.result);
         morceauActuel++;
         md5Pourcentage = Math.ceil(morceauActuel * 100 / nombreMorceaux);
@@ -464,16 +468,26 @@ async function gererEnvoi() {
         }
         updateProgressBar();
       }
-    ).catch(() => {
+    ).catch((e) => {
       erreur = true;
+      stopMd5 = true;
+      uploadEnCours = false;
+      uploadPourcentage = 0;
+      updateProgressBar();
+      if (progressContainer) progressContainer.classList.add('d-none');
+      if (e?.message !== 'Envoi annulé') {
+        afficherStatus("<i class='fa-solid fa-exclamation-triangle me-2'></i>Échec de l'envoi.", 'danger');
+      }
+      reinitialiserFormulaire();
     });
 
     calculerMD5EnParallele();
 
   } catch (e) {
+    stopMd5 = true;
     uploadEnCours = false;
     afficherStatus('<i class="fa-solid fa-exclamation-triangle me-2"></i>Erreur lors de l\'envoi du fichier.', 'danger');
-    progressContainer.classList.add('d-none');
+    if (progressContainer) progressContainer.classList.add('d-none');
     reinitialiserFormulaire();
   } finally {
     if (!uploadEnCours) {
