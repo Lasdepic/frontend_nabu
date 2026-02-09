@@ -13,9 +13,10 @@ export async function fetchAllCorpus() {
 
 
 // API pour récupéré un Corpus
-export async function fetchOneCorpus() {
-    	try {
-		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=get-corpus`);
+export async function fetchOneCorpus(id) {
+	try {
+		if (!id) return null;
+		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=display-corpus&id=${encodeURIComponent(id)}`);
 		if (!response.ok) return null;
 		return await response.json();
 	} catch (err) {
