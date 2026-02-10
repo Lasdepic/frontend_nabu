@@ -188,8 +188,6 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 		} else {
 			delete data.statusId;
 		}
-		data.commentaire = data.comment;
-		delete data.comment;
 		if (!data.folderName || !data.cote) {
 			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;

@@ -16,11 +16,20 @@ window.sendding = {
 
 // === UI ===
 async function initialiserUI() {
-  document.body.innerHTML = '';
   document.body.classList.add('page-sendding');
 
-  const header = document.createElement('header');
-  document.body.appendChild(header);
+  let header = document.querySelector('header');
+  if (!header) {
+    header = document.createElement('header');
+    document.body.prepend(header);
+  }
+
+  let main = document.querySelector('main');
+  if (!main) {
+    main = document.createElement('main');
+    document.body.appendChild(main);
+  }
+  main.innerHTML = '';
 
   try {
     const navbar = await import('../../components/navbar.js');
@@ -147,7 +156,7 @@ async function initialiserUI() {
   `;
 
   container.appendChild(card);
-  document.body.appendChild(container);
+  main.appendChild(container);
 
   if (isAdmin) {
     configurerGestionFichier();
