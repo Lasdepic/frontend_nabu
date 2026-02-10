@@ -7,6 +7,20 @@ html.page-sendding, body.page-sendding {
 	top: 100px;
 }
 
+/* Sticky sidebar (desktop uniquement) */
+@media (min-width: 992px) {
+	.sticky-lg {
+		position: sticky;
+		top: 100px;
+		align-self: flex-start;
+	}
+
+	/* Autorise le header sticky du tableau principal */
+	#tableau-paquet-conteneur.table-responsive {
+		overflow-x: visible;
+	}
+}
+
 html, body {
 	height: 100vh;
 	margin: 0;
@@ -54,26 +68,30 @@ input[type="number"] {
 
 /* Styles pour Sendding */
 .page-sendding {
-	background: #FFFFFF;
+	background-color: var(--bs-body-bg);
 	min-height: 100vh;
+}
+
+.border-dashed {
+	border-style: dashed !important;
 }
 
 #dropZone {
 	transition: all 0.3s ease;
-	border-color: #dee2e6 !important;
-	background: #f8f9fa !important;
+	border-color: var(--bs-border-color) !important;
+	background-color: var(--bs-tertiary-bg) !important;
 	cursor: pointer;
 }
 
 #dropZone:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--bs-box-shadow-sm);
 }
 
 .progress {
 	border-radius: 10px;
 	overflow: hidden;
-	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--bs-box-shadow-inset);
 }
 
 .progress-bar {
@@ -120,12 +138,12 @@ input[type="number"] {
 
 .sendding-card {
 	max-width: 600px;
-	background: linear-gradient(135deg, #f8fafc 0%, #e9ecef 100%);
+	background-color: var(--bs-body-bg);
 }
 
 .drop-zone-hover {
-	border-color: #0d6efd !important;
-	background: #e7f1ff !important;
+	border-color: var(--bs-primary-border-subtle, var(--bs-primary)) !important;
+	background-color: var(--bs-primary-bg-subtle, var(--bs-tertiary-bg)) !important;
 }
 
 .progress-sm {
@@ -146,6 +164,32 @@ input[type="number"] {
 .modal-dialog-center {
 	max-width: 500px;
 	width: 100%;
+}
+
+/* Mini tableaux (sidebar) */
+.paquet-mini-item {
+	cursor: pointer;
+	user-select: none;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.paquet-mini-item--todo {
+	background-color: var(--bs-primary-bg-subtle);
+	border: 1px solid var(--bs-primary-border-subtle);
+}
+
+.paquet-mini-item--error {
+	background-color: var(--bs-warning-bg-subtle);
+	border: 1px solid var(--bs-warning-border-subtle);
+}
+
+.paquet-mini-item:hover {
+	box-shadow: var(--bs-box-shadow-sm);
+}
+
+.paquet-mini-item:focus {
+	outline: 0;
+	box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
 

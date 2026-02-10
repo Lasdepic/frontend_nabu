@@ -1,9 +1,42 @@
 import API_URL from '../config/config.js';
+
+// Appel centralisé à l'API check-auth
+async function checkAuthRequest() {
+	const response = await fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
+		credentials: 'include',
+	});
+	if (!response.ok) {
+		return { authenticated: false };
+	}
+	return response.json();
+}
+
+// Synchronise l'utilisateur connecté (id + role) dans le localStorage
+export async function storeConnectedUser() {
+	try {
+		const data = await checkAuthRequest();
+		if (data?.authenticated && data?.user?.id) {
+			localStorage.setItem('userId', data.user.id);
+			localStorage.setItem(
+				'userRole',
+				data.user.roleId === 1 ? 'admin' : 'user'
+			);
+			return data;
+		}
+		localStorage.removeItem('userId');
+		localStorage.removeItem('userRole');
+		return data;
+	} catch {
+		localStorage.removeItem('userId');
+		localStorage.removeItem('userRole');
+		return { authenticated: false };
+	}
+}
+
 // Récupère l'id utilisateur connecté et le stocke dans le localStorage
 export async function storeConnectedUserId() {
 	try {
-		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, { credentials: 'include' });
-		const data = await response.json();
+		const data = await checkAuthRequest();
 		if (data && data.authenticated && data.user && data.user.id) {
 			localStorage.setItem('userId', data.user.id);
 		} else {
@@ -16,9 +49,7 @@ export async function storeConnectedUserId() {
 // Vérifie l'authentification via une requête à l'API
 export async function isAuthenticated() {
 	try {
-		const response = await fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, { credentials: 'include' });
-		if (!response.ok) return false;
-		const data = await response.json();
+		const data = await checkAuthRequest();
 		return data && data.authenticated === true;
 	} catch {
 		return false;

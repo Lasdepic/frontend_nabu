@@ -1,22 +1,20 @@
 import { afficherStatus, chargerFeuilleDeStyle, chargerScript } from './helpersUI.js';
-import { calculerMD5Local } from './md5.js';
 import { envoyerFichier, envoyerFichierAvecRemplacement } from './upload.js';
 import { mettreAJourStatutPaquet } from './statutPaquet.js';
+import { callVitamAPI } from '../../API/vitam/vitamAPI.js';
 
-const VITAM_PROXY_URL = '/stage/backend_nabu/index.php?vitam-proxy=1';
-
+// === Dépendances UI externes ===
 chargerFeuilleDeStyle('https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css');
 chargerFeuilleDeStyle('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css');
 chargerScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js')
   .then(initialiserUI);
 
+// === État global ===
 window.sendding = {
   xhrGlobal: null
 };
 
-/* ===============================
-   UI
-================================ */
+// === UI ===
 async function initialiserUI() {
   document.body.innerHTML = '';
   document.body.classList.add('page-sendding');
@@ -41,7 +39,7 @@ async function initialiserUI() {
   container.className = 'container d-flex justify-content-center align-items-center sendding-container';
 
   const card = document.createElement('div');
-  card.className = 'card border-0 shadow-lg w-100 sendding-card animate__animated animate__fadeIn';
+  card.className = 'card border-0 shadow-lg w-100 sendding-card';
 
   card.innerHTML = `
     <div class="card-header bg-gradient bg-primary text-white text-center py-4 rounded-top">
@@ -157,9 +155,7 @@ async function initialiserUI() {
   }
 }
 
-/* ===============================
-   Gestion des fichiers (drag & drop)
-================================ */
+// === Gestion des fichiers (drag & drop) ===
 function configurerGestionFichier() {
   const dropZone = document.getElementById('dropZone');
   const inputFichier = document.getElementById('inputFichier');
@@ -169,17 +165,14 @@ function configurerGestionFichier() {
   const fileName = document.getElementById('fileName');
   const fileSize = document.getElementById('fileSize');
 
-  // Parcourir les fichiers
   btnSelectFile.onclick = () => inputFichier.click();
 
-  // Sélection de fichier
   inputFichier.onchange = () => {
     if (inputFichier.files[0]) {
       afficherFichierSelectionne(inputFichier.files[0]);
     }
   };
 
-  // Effacer le fichier
   btnClearFile.onclick = () => {
     inputFichier.value = '';
     selectedFile.classList.add('d-none');
@@ -187,7 +180,6 @@ function configurerGestionFichier() {
     document.getElementById('btnEnvoyer').disabled = false;
   };
 
-  // Drag & Drop
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     dropZone.addEventListener(eventName, preventDefaults, false);
   });
@@ -232,9 +224,7 @@ function configurerGestionFichier() {
   }
 }
 
-/* ===============================
-   Envoi
-================================ */
+// === Envoi (upload + CINES) ===
 let uploadEnCours = false;
 
 async function envoyerAuCinesImmediat(nomFichier) {
@@ -244,20 +234,12 @@ async function envoyerAuCinesImmediat(nomFichier) {
     etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi au CINES...";
   }
 
-  const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-immediat`, {
+  return callVitamAPI('envoi-immediat', {
     method: 'GET',
     headers: {
       'X-File-Name': nomFichier
-    },
-    credentials: 'include'
+    }
   });
-
-  if (!res.ok) {
-    throw new Error(`Erreur HTTP ${res.status}`);
-  }
-
-  const data = await res.json();
-  return data;
 }
 
 async function programmerEnvoiCinesDiffere(nomFichier) {
@@ -267,36 +249,22 @@ async function programmerEnvoiCinesDiffere(nomFichier) {
     etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Mise en place de l’envoi différé...";
   }
 
-  const res = await fetch(`${VITAM_PROXY_URL}&action=programmation-differe`, {
+  return callVitamAPI('programmation-differe', {
     method: 'GET',
     headers: {
       'X-File-Name': nomFichier
-    },
-    credentials: 'include'
+    }
   });
-
-  if (!res.ok) {
-    throw new Error(`Erreur HTTP ${res.status}`);
-  }
-
-  return res.json();
 }
 
 async function verifierStatutCines(itemid, { intervalMs = 5000, maxTries = 60 } = {}) {
   for (let i = 0; i < maxTries; i++) {
-    const res = await fetch(`${VITAM_PROXY_URL}&action=envoi-statut`, {
+    const data = await callVitamAPI('envoi-statut', {
       method: 'GET',
       headers: {
         'X-Item-Id': itemid
-      },
-      credentials: 'include'
+      }
     });
-
-    if (!res.ok) {
-      throw new Error(`Erreur HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
     if (data?.status && data.status !== 'ENVOI_EN_COURS') {
       return data;
     }
@@ -371,8 +339,18 @@ async function gererEnvoi() {
         btnImmediat.onclick = async () => {
           verrouillerChoix(true);
           try {
+            await mettreAJourStatutPaquet(fichier.name, 4);
             const resultat = await envoyerAuCinesImmediat(fichier.name);
             if (resultat?.status === 'success' && resultat?.itemid) {
+              try {
+                const { createHistoriqueEnvoi } = await import('../../API/paquet/historiqueEnvoi.js');
+                const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
+                const paquetCote = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
+                await createHistoriqueEnvoi({ itemsId: resultat.itemid, paquetCote });
+              } catch (e) {
+                console.warn("Impossible d'enregistrer l'historique d'envoi", e);
+              }
+
               const etat = document.getElementById('etatUpload');
               if (etat) {
                 etat.className = 'alert alert-info text-center';
@@ -387,17 +365,28 @@ async function gererEnvoi() {
               const etatFinal = document.getElementById('etatUpload');
               if (etatFinal) {
                 if (statut?.status === 'ENVOI_OK') {
+                  await mettreAJourStatutPaquet(fichier.name, 3);
                   etatFinal.className = 'alert alert-success text-center';
                   etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Envoi CINES terminé (OK).";
                 } else if (statut?.status === 'ENVOI_EN_COURS') {
+                  await mettreAJourStatutPaquet(fichier.name, 4);
                   etatFinal.className = 'alert alert-info text-center';
                   etatFinal.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi CINES en cours...";
+                } else if (statut?.status === 'STATUT_NON_DISPONIBLE') {
+                  etatFinal.className = 'alert alert-warning text-center';
+                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
+                } else if (statut?.status === 'ENVOI_EN_ERREUR') {
+                  await mettreAJourStatutPaquet(fichier.name, 5);
+                  etatFinal.className = 'alert alert-danger text-center';
+                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES en erreur${statut?.message ? ` (${statut.message})` : ''}.`;
                 } else {
+                  await mettreAJourStatutPaquet(fichier.name, 5);
                   etatFinal.className = 'alert alert-warning text-center';
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
                 }
               }
             } else {
+              await mettreAJourStatutPaquet(fichier.name, 5);
               const etat = document.getElementById('etatUpload');
               if (etat) {
                 etat.className = 'alert alert-danger text-center';
@@ -405,6 +394,7 @@ async function gererEnvoi() {
               }
             }
           } catch (e) {
+            await mettreAJourStatutPaquet(fichier.name, 5);
             const etat = document.getElementById('etatUpload');
             if (etat) {
               etat.className = 'alert alert-danger text-center';
@@ -421,14 +411,27 @@ async function gererEnvoi() {
           verrouillerChoix(true);
           if (cinesStatus) cinesStatus.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Programmation du différé...";
           try {
+            await mettreAJourStatutPaquet(fichier.name, 8);
             const resultat = await programmerEnvoiCinesDiffere(fichier.name);
             const etat = document.getElementById('etatUpload');
             if (resultat?.status === 'success') {
+              if (resultat?.itemid) {
+                try {
+                  const { createHistoriqueEnvoi } = await import('../../API/paquet/historiqueEnvoi.js');
+                  const cote = fichier.name.endsWith('.zip') ? fichier.name.slice(0, -4) : fichier.name;
+                  const paquetCote = cote.toUpperCase().startsWith('SIP_') ? cote.slice(4) : cote;
+                  await createHistoriqueEnvoi({ itemsId: resultat.itemid, paquetCote });
+                } catch (e) {
+                  console.warn("Impossible d'enregistrer l'historique d'envoi", e);
+                }
+              }
+
               if (etat) {
                 etat.className = 'alert alert-success text-center';
                 etat.innerHTML = "<i class='fa-solid fa-check me-2'></i>Mise en place de l'envoi différé OK";
               }
             } else {
+              await mettreAJourStatutPaquet(fichier.name, 5);
               if (etat) {
                 etat.className = 'alert alert-warning text-center';
                 etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Impossible de mettre en place l'envoi différé";
@@ -438,6 +441,7 @@ async function gererEnvoi() {
               }
             }
           } catch (e) {
+            await mettreAJourStatutPaquet(fichier.name, 5);
             const etat = document.getElementById('etatUpload');
             if (etat) {
               etat.className = 'alert alert-danger text-center';
@@ -468,6 +472,7 @@ async function gererEnvoi() {
     const result = await modulePaquet.fetchOnePaquet(coteSansPrefix);
     if (!result || !result.success || !result.data) {
       const { afficherCardPaquetAddModal } = await import('../../components/editPaquet/addPaquet.js');
+      document.getElementById('paquet-modal-overlay-upload')?.remove();
       const overlay = document.createElement('div');
       overlay.id = 'paquet-modal-overlay-upload';
       overlay.className = 'modal fade show';
@@ -478,7 +483,7 @@ async function gererEnvoi() {
       overlay.style.left = 0;
       overlay.style.width = '100vw';
       overlay.style.height = '100vh';
-      overlay.style.zIndex = 2000;
+      overlay.style.zIndex = 3000;
 
       const modal = document.createElement('div');
       modal.className = 'modal-dialog modal-dialog-centered';
@@ -555,7 +560,6 @@ async function gererEnvoi() {
     let uploadTermine = false;
     let erreur = false;
 
-    // Gestion de l'annulation
     btnCancelUpload.onclick = () => {
       if (window.sendding.xhrGlobal) {
         window.sendding.xhrGlobal.abort();
@@ -574,7 +578,6 @@ async function gererEnvoi() {
       uploadProgressBar.style.width = uploadPourcentage + '%';
       uploadProgressBar.setAttribute('aria-valuenow', uploadPourcentage);
       
-      // Mise à jour des badges de statut
       if (md5Pourcentage === 100) {
         md5Status.textContent = 'Terminé';
         md5Status.className = 'badge bg-success';
@@ -604,7 +607,6 @@ async function gererEnvoi() {
     const calculateurMD5 = new window.SparkMD5.ArrayBuffer();
     const lecteur = new FileReader();
 
-    // Initialiser les statuts
     md5Status.textContent = 'En cours...';
     md5Status.className = 'badge bg-info';
     uploadStatus.textContent = 'En cours...';
@@ -615,7 +617,13 @@ async function gererEnvoi() {
       if (morceauActuel >= nombreMorceaux) {
         md5Termine = true;
         md5Pourcentage = 100;
-        if (md5Local) md5Local.value = calculateurMD5.end();
+        const hash = calculateurMD5.end();
+        if (md5Local) md5Local.value = hash;
+        try {
+          window.dispatchEvent(new CustomEvent('md5local:ready', {
+            detail: { md5: hash, fileName: fichierAEnvoyer?.name }
+          }));
+        } catch {}
         updateProgressBar();
         if (uploadTermine) {
           operationTerminee = true;
@@ -637,7 +645,6 @@ async function gererEnvoi() {
       lecteur.readAsArrayBuffer(fichierAEnvoyer.slice(debut, fin));
     }
 
-    // Upload en parallèle du calcul MD5
     const importerCardConfirm = () => import('../../components/download/cardConfirm.js');
     envoyerFichier(
       importerCardConfirm,
@@ -687,9 +694,7 @@ async function gererEnvoi() {
   }
 }
 
-/* ===============================
-   Réinitialisation
-================================ */
+// === Réinitialisation ===
 function reinitialiserFormulaire() {
   const bouton = document.getElementById('btnEnvoyer');
   const input = document.getElementById('inputFichier');
