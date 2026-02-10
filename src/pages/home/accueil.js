@@ -2,29 +2,14 @@ import { selectCorpus } from '../../components/selecteur/selectCorpus.js';
 import { afficherTableauPaquet } from '../../components/home/tableauPaquet.js';
 import { afficherTableauToDoPaquet } from '../../components/home/toDo.js';
 import { afficherSendErrorPaquet } from '../../components/home/sendError.js';
-import API_URL from '../../API/config/config.js';
+import { storeConnectedUser } from '../../API/auth/auth.js';
 
 export default function accueilPage() {
 
     /* =======================
        AUTH CHECK
     ======================= */
-    fetch(`${API_URL}/backend_nabu/index.php?action=check-auth`, {
-        credentials: 'include'
-    })
-        .then(r => r.json())
-        .then(data => {
-            if (data?.authenticated && data?.user?.id) {
-                localStorage.setItem('userId', data.user.id);
-                localStorage.setItem(
-                    'userRole',
-                    data.user.roleId === 1 ? 'admin' : 'user'
-                );
-            } else {
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userRole');
-            }
-        });
+    storeConnectedUser();
 
     /* =======================
        MAIN

@@ -7,6 +7,20 @@ html.page-sendding, body.page-sendding {
 	top: 100px;
 }
 
+/* Sticky sidebar (desktop uniquement) */
+@media (min-width: 992px) {
+	.sticky-lg {
+		position: sticky;
+		top: 100px;
+		align-self: flex-start;
+	}
+
+	/* Autorise le header sticky du tableau principal */
+	#tableau-paquet-conteneur.table-responsive {
+		overflow-x: visible;
+	}
+}
+
 html, body {
 	height: 100vh;
 	margin: 0;
@@ -150,6 +164,32 @@ input[type="number"] {
 .modal-dialog-center {
 	max-width: 500px;
 	width: 100%;
+}
+
+/* Mini tableaux (sidebar) */
+.paquet-mini-item {
+	cursor: pointer;
+	user-select: none;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.paquet-mini-item--todo {
+	background-color: var(--bs-primary-bg-subtle);
+	border: 1px solid var(--bs-primary-border-subtle);
+}
+
+.paquet-mini-item--error {
+	background-color: var(--bs-warning-bg-subtle);
+	border: 1px solid var(--bs-warning-border-subtle);
+}
+
+.paquet-mini-item:hover {
+	box-shadow: var(--bs-box-shadow-sm);
+}
+
+.paquet-mini-item:focus {
+	outline: 0;
+	box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
 

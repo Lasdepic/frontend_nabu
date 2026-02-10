@@ -2,15 +2,7 @@ import { fetchOnePaquet, deletePaquet } from '../../API/paquet/paquet.js';
 import { fetchAllStatus } from '../../API/paquet/status.js';
 import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
-const STATUS_COLORS = {
-	INEXISTANT: 'dark',
-	NON_ENVOYE: 'secondary',
-	ENVOI_OK: 'success',
-	ENVOI_EN_COURS: 'primary',
-	ENVOI_EN_ERREUR: 'danger',
-	ENVOI_EN_PAUSE: 'warning', 
-	ENVOI_SCDI_OK: 'info'      
-};
+import { normalizeStatus, renderStatusBadge } from '../status/badgeStatus.js';
 
 let STATUS_CACHE = null;
 let CORPUS_CACHE = null;
@@ -19,9 +11,10 @@ async function getStatusById(statusId) {
 	if (!statusId) return null;
 	if (!STATUS_CACHE) {
 		const result = await fetchAllStatus();
-		STATUS_CACHE = Array.isArray(result) ? result : [];
+		const list = result?.data || result;
+		STATUS_CACHE = Array.isArray(list) ? list : [];
 	}
-	return STATUS_CACHE.find(s => s.idStatus == statusId) || null;
+	return STATUS_CACHE.find(s => (s.idstatus ?? s.idStatus ?? s.id) == statusId) || null;
 }
 
 async function getCorpusNameById(corpusId) {
@@ -33,12 +26,6 @@ async function getCorpusNameById(corpusId) {
 	}
 	const corpus = CORPUS_CACHE.find(c => (c.idcorpus ?? c.idCorpus) == corpusId) || null;
 	return (corpus?.name_corpus ?? corpus?.nameCorpus) || null;
-}
-
-function createStatusBadge(status) {
-	if (!status) return '<span class="badge bg-secondary">Inconnu</span>';
-	const color = STATUS_COLORS[status.nameStatus] || 'secondary';
-	return `<span class="badge bg-${color}">${status.nameStatus.replaceAll('_', ' ')}</span>`;
 }
 
 const formatDate = date =>
@@ -99,6 +86,7 @@ export async function afficherCardPaquetModal(paquet) {
 
 export async function createCardPaquet(paquet) {
 		const status = await getStatusById(paquet.statusId);
+		const statusMeta = normalizeStatus(status);
 		const corpusName =
 			(paquet?.corpusName ?? paquet?.name_corpus) ||
 			(await getCorpusNameById(paquet?.corpusId)) ||
@@ -107,7 +95,7 @@ export async function createCardPaquet(paquet) {
 		card.className = 'card shadow border-0';
 		const userRole = localStorage.getItem('userRole');
 		// Le bouton supprimer n'est visible que pour l'admin et si le status n'est pas ENVOI_OK
-		const isDeleteVisible = userRole === 'admin' && status?.nameStatus !== 'ENVOI_OK';
+		const isDeleteVisible = userRole === 'admin' && statusMeta?.name !== 'ENVOI_OK';
 		// Le bouton historique est toujours visible
 		card.innerHTML = `
 		       <div class="card-body">
@@ -118,7 +106,7 @@ export async function createCardPaquet(paquet) {
 				       <li class="list-group-item"><strong>Répertoire des images autre :</strong> ${paquet.microFilmImage ?? ''}</li>
 				       <li class="list-group-item"><strong>Répertoire des images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
 				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
-				       <li class="list-group-item"><strong>Status :</strong> ${createStatusBadge(status)}</li>
+				       <li class="list-group-item"><strong>Status :</strong> ${renderStatusBadge(status)}</li>
 				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
 			       </ul>
 					       <div class="row mb-3 text-center">
