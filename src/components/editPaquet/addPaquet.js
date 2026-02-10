@@ -158,7 +158,10 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 		}
 		const statusContainer = form.querySelector('#status-select-container');
 		if (statusContainer) {
-			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId' });
+			const statusSelectorWrapper = await createStatusSelector({
+				name: 'statusId',
+				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
+			});
 			statusContainer.appendChild(statusSelectorWrapper);
 		}
 	})();

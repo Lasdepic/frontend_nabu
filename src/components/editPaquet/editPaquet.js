@@ -122,7 +122,11 @@ export function afficherCardPaquetEditModal(paquet) {
 		}
 		const statusContainer = form.querySelector('#status-select-container');
 		if (statusContainer) {
-			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId', value: paquet.statusId || paquet.status_id || '' });
+			const statusSelectorWrapper = await createStatusSelector({
+				name: 'statusId',
+				value: paquet.statusId || paquet.status_id || '',
+				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
+			});
 			statusContainer.appendChild(statusSelectorWrapper);
 		}
 	})();
