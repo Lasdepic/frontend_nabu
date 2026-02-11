@@ -54,6 +54,7 @@ export function showCreateCorpusModal(onSuccess) {
 		e.preventDefault();
 		const formData = new FormData(form);
 		const data = Object.fromEntries(formData.entries());
+		data.nameCorpus = (data.nameCorpus ?? '').toString().trim();
 		if (!data.nameCorpus) {
 			showPopup('Le nom du corpus est requis.', false);
 			return;
