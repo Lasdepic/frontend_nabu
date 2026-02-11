@@ -6,70 +6,11 @@ let selectedCorpus = null;
 export function selectCorpus(onSelect, defaultValue) {
 	const container = document.createElement('div');
 	const select = document.createElement('select');
-	select.className = 'form-select select-small';
+	select.className = 'select-small';
 	select.id = 'corpus-select';
-	select.setAttribute('aria-label', 'Sélection du corpus');
-	select.disabled = true;
 
-	const loadingOption = document.createElement('option');
-	loadingOption.value = '';
-	loadingOption.textContent = 'Chargement des corpus…';
-	loadingOption.selected = true;
-	loadingOption.disabled = true;
-	select.appendChild(loadingOption);
-
-	const notifySelection = (value) => {
-		selectedCorpus = value;
-		if (typeof onSelect === 'function') onSelect(value);
-	};
-
-	const getCorpusDescription = (corpus) => {
-		return (
-			corpus?.desciption_corpus ??
-			corpus?.description_corpus ??
-			corpus?.description ??
-			''
-		);
-	};
-
-	const buildCorpusDataset = (corpus) => {
-		return {
-			id: corpus.idcorpus,
-			nom: corpus.name_corpus,
-			description: getCorpusDescription(corpus)
-		};
-	};
-
-	const handleChange = () => {
-		const selectedOption = select.options[select.selectedIndex];
-		if (!selectedOption) return notifySelection(null);
-		if (selectedOption.value === 'ALL') return notifySelection('ALL');
-		if (!selectedOption.dataset?.corpus) return notifySelection(null);
-		try {
-			return notifySelection(JSON.parse(selectedOption.dataset.corpus));
-		} catch {
-			return notifySelection(null);
-		}
-	};
-	select.addEventListener('change', handleChange);
-
-	fetchAllCorpus()
-		.then((corpusList) => {
-			// Reset options (remove loading)
-			select.innerHTML = '';
-
-			if (!corpusList || !corpusList.success || !Array.isArray(corpusList.data)) {
-				const errorOption = document.createElement('option');
-				errorOption.value = '';
-				errorOption.textContent = 'Impossible de charger les corpus';
-				errorOption.selected = true;
-				errorOption.disabled = true;
-				select.appendChild(errorOption);
-				select.disabled = true;
-				notifySelection(null);
-				return;
-			}
-
+	fetchAllCorpus().then(corpusList => {
+		if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
 			const allOption = document.createElement('option');
 			allOption.value = 'ALL';
 			allOption.textContent = 'TOUS';
@@ -78,78 +19,89 @@ export function selectCorpus(onSelect, defaultValue) {
 				nom: 'TOUS',
 				description: 'Afficher tous les paquets'
 			});
+			allOption.selected = true;
 			select.appendChild(allOption);
 
-			const sortedCorpus = corpusList.data
-				.slice()
-				.filter((corpus) => corpus && corpus.idcorpus != null)
-				.sort((a, b) => {
-					const nameA = (a.name_corpus || '').toLowerCase();
-					const nameB = (b.name_corpus || '').toLowerCase();
-					return nameA.localeCompare(nameB);
-				});
+			const sortedCorpus = corpusList.data.slice().sort((a, b) => {
+				const nameA = (a.name_corpus || '').toLowerCase();
+				const nameB = (b.name_corpus || '').toLowerCase();
+				if (nameA < nameB) return -1;
+				if (nameA > nameB) return 1;
+				return 0;
+			});
 
-			sortedCorpus.forEach((corpus) => {
+			sortedCorpus.forEach(corpus => {
 				const option = document.createElement('option');
-				option.value = String(corpus.idcorpus);
-				option.textContent = corpus.name_corpus || 'Corpus';
-				option.dataset.corpus = JSON.stringify(buildCorpusDataset(corpus));
+				option.value = corpus.idcorpus;
+				option.innerHTML = corpus.desciption_corpus
+				  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
+				  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
+				option.textContent = corpus.name_corpus; 
+				option.dataset.corpus = JSON.stringify({
+					id: corpus.idcorpus,
+					nom: corpus.name_corpus,
+					description: corpus.desciption_corpus
+				});
 				select.appendChild(option);
 			});
 
-			select.disabled = false;
+			setTimeout(() => {
+				// Sélectionner la valeur par défaut si fournie
+				if (defaultValue) {
+					select.value = defaultValue;
+					if (window.$ && window.$.fn && window.$.fn.select2) {
+						window.$(select).val(defaultValue).trigger('change');
+					} else {
+						// Déclencher manuellement l'événement change si pas de select2
+						select.dispatchEvent(new Event('change'));
+					}
+				}
+				if (window.$ && window.$.fn && window.$.fn.select2) {
+					window.$(select).select2({
+						width: 'resolve',
+						templateResult: formatCorpusOption,
+						templateSelection: formatCorpusSelection,
+						dropdownParent: window.$(container),
+						escapeMarkup: function (markup) { return markup; }
+					});
+					const style = document.createElement('style');
+					style.innerHTML = `
+						#corpus-select + .select2 .select2-selection__rendered {
+							text-align: center !important;
+							width: 100%;
+							font-weight: bold;
+						}
+						.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
+							text-align: center !important;
+						}
+					`;
+					container.appendChild(style);
+				}
+			}, 0);
+		}
+	});
 
-			// Valeur par défaut
-			if (defaultValue != null && defaultValue !== '') {
-				select.value = String(defaultValue);
-			} else {
-				select.value = 'ALL';
+	select.addEventListener('change', (e) => {
+		const selectedOption = select.options[select.selectedIndex];
+		if (selectedOption && selectedOption.value === 'ALL') {
+			selectedCorpus = 'ALL';
+			if (typeof onSelect === 'function') {
+				onSelect('ALL');
 			}
-
-			// Init Select2 si dispo
-			if (window.$ && window.$.fn && window.$.fn.select2) {
-				window.$(select).select2({
-					width: 'resolve',
-					templateResult: formatCorpusOption,
-					templateSelection: formatCorpusSelection,
-					dropdownParent: window.$(container),
-					escapeMarkup: (markup) => markup
-				});
-				window.$(select).val(select.value).trigger('change');
-
-				const style = document.createElement('style');
-				style.innerHTML = `
-					#corpus-select + .select2 .select2-selection__rendered {
-						text-align: center !important;
-						width: 100%;
-						font-weight: 600;
-					}
-					.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
-						text-align: center !important;
-					}
-					.select2-results__option .corpus-desc {
-						color: var(--bs-secondary-color, #6c757d);
-						font-size: 0.875em;
-						margin-top: 2px;
-					}
-				`;
-				container.appendChild(style);
-			} else {
-				// Sans Select2 : déclencher la sélection initiale
-				handleChange();
+		} else if (selectedOption && selectedOption.dataset.corpus) {
+			selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
+			if (typeof onSelect === 'function') {
+				onSelect(selectedCorpus);
 			}
-		})
-		.catch(() => {
-			select.innerHTML = '';
-			const errorOption = document.createElement('option');
-			errorOption.value = '';
-			errorOption.textContent = 'Erreur lors du chargement des corpus';
-			errorOption.selected = true;
-			errorOption.disabled = true;
-			select.appendChild(errorOption);
-			select.disabled = true;
-			notifySelection(null);
-		});
+		} else {
+			selectedCorpus = null;
+			if (typeof onSelect === 'function') {
+				onSelect(null);
+			}
+		}
+	});
+
+
 
 	container.appendChild(select);
 	return container;
@@ -159,16 +111,11 @@ function formatCorpusOption(state) {
 	if (!state.id) return state.text;
 	const option = state.element;
 	if (option && option.dataset && option.dataset.corpus) {
-		let corpus;
-		try {
-			corpus = JSON.parse(option.dataset.corpus);
-		} catch {
-			return state.text;
-		}
+		const corpus = JSON.parse(option.dataset.corpus);
 		let html = `<div style='text-align: center;'>`;
-		html += `<div class='corpus-nom'><b>${corpus.nom ?? ''}</b></div>`;
+		html += `<div class='corpus-nom'><b>${corpus.nom}</b></div>`;
 		if (corpus.description) {
-			html += `<div class='corpus-desc'>${corpus.description}</div>`;
+			html += `<div class='corpus-desc' style='color: #6C757D;'>${corpus.description}</div>`;
 		}
 		html += `</div>`;
 		return window.$('<span>').html(html);
@@ -180,13 +127,8 @@ function formatCorpusSelection(state) {
 	if (!state.id) return state.text;
 	const option = state.element;
 	if (option && option.dataset && option.dataset.corpus) {
-		let corpus;
-		try {
-			corpus = JSON.parse(option.dataset.corpus);
-		} catch {
-			return state.text;
-		}
-		return `<span style='display: inline-block; width: 100%; text-align: center;'><b>${corpus.nom ?? ''}</b></span>`;
+		const corpus = JSON.parse(option.dataset.corpus);
+		return `<span style='display: inline-block; width: 100%; text-align: center;'><b>${corpus.nom}</b></span>`;
 	}
 	return state.text;
 }
