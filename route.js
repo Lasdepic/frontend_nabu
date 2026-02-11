@@ -24,6 +24,15 @@ const routes = {
 	}
 };
 
+function getOrCreateMain() {
+	let main = document.querySelector('main');
+	if (!main) {
+		main = document.createElement('main');
+		document.body.appendChild(main);
+	}
+	return main;
+}
+
 async function navigate(path) {
 	// Vérifie l'authentification
 	const authenticated = await isAuthenticated();
@@ -46,10 +55,8 @@ async function navigate(path) {
 	}
 
 	// Vide le contenu de <main> avant d'afficher la nouvelle page
-	let main = document.querySelector('main');
-	if (main) {
-		main.innerHTML = '';
-	}
+	const main = getOrCreateMain();
+	main.innerHTML = '';
 	const route = routes[path] || routes['/'];
 	document.title = route.title;
 	route.template().then((module) => {

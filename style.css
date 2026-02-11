@@ -192,4 +192,55 @@ input[type="number"] {
 	box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
+/* Page Login */
+html.page-login,
+body.page-login {
+	overflow: hidden;
+	height: 100vh;
+}
+
+.login-shell {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5rem;
+	background-color: var(--bs-tertiary-bg);
+}
+
+.login-card {
+	width: 100%;
+	max-width: 520px;
+	border-radius: var(--bs-border-radius-lg);
+	background-color: var(--bs-body-bg);
+	border-color: var(--bs-border-color);
+	padding: 2rem;
+}
+
+@media (max-width: 575.98px) {
+	.login-card {
+		padding: 1.5rem;
+	}
+}
+
+.login-header {
+	text-align: center;
+}
+
+.login-logo {
+	width: 120px;
+	height: 120px;
+	object-fit: contain;
+	display: inline-block;
+	margin-bottom: 0.75rem;
+}
+
+.login-title {
+	font-family: 'Cormorant Garamond', serif;
+}
+
+.login-subtitle {
+	font-weight: 600;
+}
+
 

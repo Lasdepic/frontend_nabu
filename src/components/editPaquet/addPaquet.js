@@ -158,7 +158,10 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 		}
 		const statusContainer = form.querySelector('#status-select-container');
 		if (statusContainer) {
-			const statusSelectorWrapper = await createStatusSelector({ name: 'statusId' });
+			const statusSelectorWrapper = await createStatusSelector({
+				name: 'statusId',
+				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
+			});
 			statusContainer.appendChild(statusSelectorWrapper);
 		}
 	})();
@@ -188,8 +191,6 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 		} else {
 			delete data.statusId;
 		}
-		data.commentaire = data.comment;
-		delete data.comment;
 		if (!data.folderName || !data.cote) {
 			showPopup('Veuillez remplir tous les champs obligatoires (Nom dossier et Cote).', false);
 			return;

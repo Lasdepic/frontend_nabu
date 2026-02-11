@@ -16,11 +16,20 @@ window.sendding = {
 
 // === UI ===
 async function initialiserUI() {
-  document.body.innerHTML = '';
   document.body.classList.add('page-sendding');
 
-  const header = document.createElement('header');
-  document.body.appendChild(header);
+  let header = document.querySelector('header');
+  if (!header) {
+    header = document.createElement('header');
+    document.body.prepend(header);
+  }
+
+  let main = document.querySelector('main');
+  if (!main) {
+    main = document.createElement('main');
+    document.body.appendChild(main);
+  }
+  main.innerHTML = '';
 
   try {
     const navbar = await import('../../components/navbar.js');
@@ -147,7 +156,7 @@ async function initialiserUI() {
   `;
 
   container.appendChild(card);
-  document.body.appendChild(container);
+  main.appendChild(container);
 
   if (isAdmin) {
     configurerGestionFichier();
@@ -257,14 +266,42 @@ async function programmerEnvoiCinesDiffere(nomFichier) {
   });
 }
 
-async function verifierStatutCines(itemid, { intervalMs = 5000, maxTries = 60 } = {}) {
+async function verifierStatutCines(
+  itemid,
+  {
+    intervalMs = 5000,
+    maxTries = 60,
+    onTick = null,
+    shouldStop = null
+  } = {}
+) {
+
+  let lastData = null;
   for (let i = 0; i < maxTries; i++) {
-    const data = await callVitamAPI('envoi-statut', {
-      method: 'GET',
-      headers: {
-        'X-Item-Id': itemid
-      }
-    });
+    if (shouldStop?.()) {
+      return { status: 'VERIFICATION_ARRETEE', message: "Vérification arrêtée." };
+    }
+
+    let data = null;
+    try {
+      data = await callVitamAPI('envoi-statut', {
+        method: 'GET',
+        headers: {
+          'X-Item-Id': itemid
+        }
+      });
+    } catch (e) {
+      data = { status: 'STATUT_NON_DISPONIBLE', message: "Impossible de récupérer le statut." };
+    }
+
+    lastData = data;
+    if (typeof onTick === 'function') {
+      try {
+        onTick(data, { attempt: i + 1, maxTries });
+      } catch {}
+    }
+
+    // Arrêt dès que l'état n'est plus "ENVOI_EN_COURS"
     if (data?.status && data.status !== 'ENVOI_EN_COURS') {
       return data;
     }
@@ -272,7 +309,11 @@ async function verifierStatutCines(itemid, { intervalMs = 5000, maxTries = 60 } 
     await new Promise(r => setTimeout(r, intervalMs));
   }
 
-  return { status: 'STATUT_NON_DISPONIBLE', message: "Délai dépassé pour la vérification d'état." };
+  return {
+    status: 'STATUT_NON_DISPONIBLE',
+    message: "Délai dépassé pour la vérification d'état.",
+    lastStatus: lastData?.status
+  };
 }
 
 async function gererEnvoi() {
@@ -338,6 +379,24 @@ async function gererEnvoi() {
       if (btnImmediat) {
         btnImmediat.onclick = async () => {
           verrouillerChoix(true);
+          const cinesPollToken = { stopped: false };
+          window.sendding.cinesPollToken = cinesPollToken;
+
+          const getUiStatus = (status) => {
+            switch (status) {
+              case 'ENVOI_OK':
+                return { label: 'ENVOI OK', badgeClass: 'text-bg-success', iconHtml: "<i class='fa-solid fa-circle-check me-1'></i>" };
+              case 'ENVOI_EN_ERREUR':
+                return { label: 'EN ERREUR', badgeClass: 'text-bg-danger', iconHtml: "<i class='fa-solid fa-triangle-exclamation me-1'></i>" };
+              case 'ENVOI_EN_COURS':
+                return { label: 'EN COURS', badgeClass: 'text-bg-info', iconHtml: "<i class='fa-solid fa-spinner fa-spin me-1'></i>" };
+              case 'STATUT_NON_DISPONIBLE':
+                return { label: 'STATUT INDISPONIBLE', badgeClass: 'text-bg-warning', iconHtml: "<i class='fa-solid fa-triangle-exclamation me-1'></i>" };
+              default:
+                return { label: status ? String(status) : 'INCONNU', badgeClass: 'text-bg-secondary', iconHtml: "<i class='fa-solid fa-circle-info me-1'></i>" };
+            }
+          };
+
           try {
             await mettreAJourStatutPaquet(fichier.name, 4);
             const resultat = await envoyerAuCinesImmediat(fichier.name);
@@ -353,25 +412,65 @@ async function gererEnvoi() {
 
               const etat = document.getElementById('etatUpload');
               if (etat) {
+                const ui = getUiStatus('ENVOI_EN_COURS');
                 etat.className = 'alert alert-info text-center';
                 etat.innerHTML = `
-                  <div class='fw-semibold mb-1'><i class='fa-solid fa-paper-plane me-2'></i>Envoi au CINES lancé</div>
-                  <div class='small'>Message : ${resultat.message ?? ''}</div>
-                  <div class='small'>itemid : ${resultat.itemid}</div>
+                  <div class='d-flex align-items-center justify-content-between flex-wrap gap-2'>
+                    <div class='fw-semibold text-start'>
+                      <i class='fa-solid fa-paper-plane me-2'></i>
+                      Envoi au CINES
+                    </div>
+                    <span id='cines_status_badge' class='badge ${ui.badgeClass}'>${ui.iconHtml}${ui.label}</span>
+                  </div>
+
+                  ${resultat?.message ? `<div class='small mt-2 text-start'><span class='text-muted'>Message :</span> ${resultat.message}</div>` : ''}
+
+                  <div class='small mt-2 text-start'>
+                    <div><span class='text-muted'>ItemId :</span> <code>${resultat.itemid}</code></div>
+                    <div class='d-flex flex-wrap gap-3 mt-1'>
+                      <span><i class='fa-solid fa-clock me-1'></i><span class='text-muted'>Dernière vérification :</span> <span id='cines_last_check'>—</span></span>
+                      <span><i class='fa-solid fa-rotate me-1'></i><span class='text-muted'>Vérification :</span> <span id='cines_attempt'>0</span>/<span id='cines_max'>60</span> <span class='text-muted'>(toutes les 5s)</span></span>
+                    </div>
+                    <div id='cines_polling_message' class='text-muted mt-1'></div>
+                  </div>
                 `;
               }
 
-              const statut = await verifierStatutCines(resultat.itemid);
+              const statut = await verifierStatutCines(resultat.itemid, {
+                intervalMs: 5000,
+                maxTries: 60,
+                shouldStop: () => {
+                  const etatEl = document.getElementById('etatUpload');
+                  return cinesPollToken.stopped || !etatEl;
+                },
+                onTick: (data, meta) => {
+                  const badgeEl = document.getElementById('cines_status_badge');
+                  const lastCheckEl = document.getElementById('cines_last_check');
+                  const attemptEl = document.getElementById('cines_attempt');
+                  const maxEl = document.getElementById('cines_max');
+                  const msgEl = document.getElementById('cines_polling_message');
+
+                  if (attemptEl) attemptEl.textContent = String(meta.attempt);
+                  if (maxEl) maxEl.textContent = String(meta.maxTries);
+                  if (lastCheckEl) lastCheckEl.textContent = new Date().toLocaleTimeString();
+
+                  const ui = getUiStatus(data?.status);
+                  if (badgeEl) {
+                    badgeEl.className = `badge ${ui.badgeClass}`;
+                    badgeEl.innerHTML = `${ui.iconHtml}${ui.label}`;
+                  }
+
+                  if (msgEl) {
+                    msgEl.textContent = data?.message ? String(data.message) : '';
+                  }
+                }
+              });
               const etatFinal = document.getElementById('etatUpload');
               if (etatFinal) {
                 if (statut?.status === 'ENVOI_OK') {
                   await mettreAJourStatutPaquet(fichier.name, 3);
                   etatFinal.className = 'alert alert-success text-center';
                   etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Envoi CINES terminé (OK).";
-                } else if (statut?.status === 'ENVOI_EN_COURS') {
-                  await mettreAJourStatutPaquet(fichier.name, 4);
-                  etatFinal.className = 'alert alert-info text-center';
-                  etatFinal.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi CINES en cours...";
                 } else if (statut?.status === 'STATUT_NON_DISPONIBLE') {
                   etatFinal.className = 'alert alert-warning text-center';
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
@@ -379,6 +478,9 @@ async function gererEnvoi() {
                   await mettreAJourStatutPaquet(fichier.name, 5);
                   etatFinal.className = 'alert alert-danger text-center';
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES en erreur${statut?.message ? ` (${statut.message})` : ''}.`;
+                } else if (statut?.status === 'VERIFICATION_ARRETEE') {
+                  etatFinal.className = 'alert alert-warning text-center';
+                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>${statut?.message ?? 'Vérification arrêtée.'}`;
                 } else {
                   await mettreAJourStatutPaquet(fichier.name, 5);
                   etatFinal.className = 'alert alert-warning text-center';
@@ -401,6 +503,9 @@ async function gererEnvoi() {
               etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de l'envoi immédiat au CINES.";
             }
           } finally {
+            if (window.sendding?.cinesPollToken) {
+              window.sendding.cinesPollToken.stopped = true;
+            }
             nettoyerEtReset();
           }
         };
