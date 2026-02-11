@@ -101,7 +101,29 @@ export function selectCorpus(onSelect, defaultValue) {
 		}
 	});
 
-
+	setTimeout(() => {
+		if (window.$ && window.$.fn && window.$.fn.select2) {
+			window.$(select).on('change', function (e) {
+				const selectedOption = select.options[select.selectedIndex];
+				if (selectedOption && selectedOption.value === 'ALL') {
+					selectedCorpus = 'ALL';
+					if (typeof onSelect === 'function') {
+						onSelect('ALL');
+					}
+				} else if (selectedOption && selectedOption.dataset.corpus) {
+					selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
+					if (typeof onSelect === 'function') {
+						onSelect(selectedCorpus);
+					}
+				} else {
+					selectedCorpus = null;
+					if (typeof onSelect === 'function') {
+						onSelect(null);
+					}
+				}
+			});
+		}
+	}, 0);
 
 	container.appendChild(select);
 	return container;
