@@ -468,9 +468,30 @@ async function gererEnvoi() {
               const etatFinal = document.getElementById('etatUpload');
               if (etatFinal) {
                 if (statut?.status === 'ENVOI_OK') {
-                  await mettreAJourStatutPaquet(fichier.name, 3);
-                  etatFinal.className = 'alert alert-success text-center';
-                  etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Envoi CINES terminé (OK).";
+                  // Règle demandée : si non validé CINES => ERREUR, sinon ENVOI_OK.
+                  // La validation est vérifiée via le bordereau (ReplyCode === 'OK').
+                  let validatedByCines = false;
+                  try {
+                    const bordereau = await callVitamAPI('bordereau', {
+                      method: 'GET',
+                      headers: {
+                        'X-Item-Id': resultat.itemid
+                      }
+                    });
+                    validatedByCines = bordereau?.status === 'success' && bordereau?.info?.ReplyCode === 'OK';
+                  } catch {
+                    validatedByCines = false;
+                  }
+
+                  if (validatedByCines) {
+                    await mettreAJourStatutPaquet(fichier.name, 3);
+                    etatFinal.className = 'alert alert-success text-center';
+                    etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Paquet validé par le CINES (OK).";
+                  } else {
+                    await mettreAJourStatutPaquet(fichier.name, 5);
+                    etatFinal.className = 'alert alert-danger text-center';
+                    etatFinal.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Paquet non validé par le CINES : statut mis en erreur.";
+                  }
                 } else if (statut?.status === 'STATUT_NON_DISPONIBLE') {
                   etatFinal.className = 'alert alert-warning text-center';
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;

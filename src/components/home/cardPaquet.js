@@ -44,12 +44,26 @@ async function getCorpusNameById(corpusId) {
 	return (corpus?.name_corpus ?? corpus?.nameCorpus) || null;
 }
 
-const formatDate = date =>
-	date ? new Date(date).toLocaleDateString('fr-FR', {
+const formatDate = date => {
+	if (!date) return '';
+	const parsed = new Date(date);
+	if (Number.isNaN(parsed.getTime())) return '';
+	return parsed.toLocaleString('fr-FR', {
 		day: 'numeric',
 		month: 'long',
-		year: 'numeric'
-	}) : '';
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	});
+};
+
+const formatUserName = paquet => {
+	const prenom = (paquet?.userPrenom ?? paquet?.prenom ?? '').toString().trim();
+	const nom = (paquet?.userNom ?? paquet?.nom ?? '').toString().trim();
+	const full = `${prenom} ${nom}`.trim();
+	return full || 'Inconnu';
+};
 
 function showToast(message, success = true) {
 	const toast = document.createElement('div');
@@ -121,6 +135,7 @@ export async function createCardPaquet(paquet) {
 				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
 				       <li class="list-group-item"><strong>Status :</strong> ${renderStatusBadge(status)}</li>
 				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
+				       <li class="list-group-item"><strong>Modifié par :</strong> ${formatUserName(paquet)}</li>
 			       </ul>
 					       <div class="row mb-3 text-center">
 						       <div class="col d-flex flex-column align-items-center">
