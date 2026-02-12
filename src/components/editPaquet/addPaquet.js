@@ -5,6 +5,45 @@ import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
 
 export function afficherCardPaquetAddModal(defaults = {}) {
+	function normalizeStatusLabel(label) {
+		const raw = String(label || '')
+			.trim()
+			.toUpperCase();
+		const noDiacritics = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		return noDiacritics
+			.replace(/[^A-Z0-9]+/g, '_')
+			.replace(/^_+|_+$/g, '');
+	}
+
+	function getNonEnvoyeStatusValue(statusSelectEl) {
+		if (!statusSelectEl) return '';
+		const options = Array.from(statusSelectEl.options || []);
+		const opt = options.find(o => (o?.dataset?.normalizedLabel || normalizeStatusLabel(o.textContent)) === 'NON_ENVOYE');
+		return opt ? opt.value : '';
+	}
+
+	function applySipRule(formEl) {
+		const sipCheckbox = formEl?.querySelector('[name="filedSip"]');
+		const statusSelectEl = formEl?.querySelector('#status-select-container select');
+		if (!sipCheckbox || !statusSelectEl) return;
+
+		const nonEnvoyeValue = getNonEnvoyeStatusValue(statusSelectEl);
+		if (!nonEnvoyeValue) return;
+
+		if (sipCheckbox.checked) {
+			if (!statusSelectEl.dataset.prevValue) {
+				statusSelectEl.dataset.prevValue = statusSelectEl.value || '';
+			}
+			statusSelectEl.value = nonEnvoyeValue;
+			statusSelectEl.disabled = true;
+		} else {
+			statusSelectEl.disabled = false;
+			if (statusSelectEl.dataset.prevValue !== undefined) {
+				statusSelectEl.value = statusSelectEl.dataset.prevValue;
+				delete statusSelectEl.dataset.prevValue;
+			}
+		}
+	}
 
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
@@ -163,6 +202,12 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
 			});
 			statusContainer.appendChild(statusSelectorWrapper);
+
+			const sipCheckbox = form.querySelector('[name="filedSip"]');
+			if (sipCheckbox) {
+				sipCheckbox.addEventListener('change', () => applySipRule(form));
+			}
+			applySipRule(form);
 		}
 	})();
 
@@ -186,7 +231,14 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 			data.typeDocumentId = null;
 		}
 		const selectStatusEl = form.querySelector('#status-select-container select');
-		if (selectStatusEl && selectStatusEl.value) {
+		if (data.filedSip) {
+			const nonEnvoyeValue = getNonEnvoyeStatusValue(selectStatusEl);
+			if (!nonEnvoyeValue) {
+				showPopup('Impossible de trouver le statut NON_ENVOYE. Veuillez contacter un administrateur.', false);
+				return;
+			}
+			data.statusId = nonEnvoyeValue;
+		} else if (selectStatusEl && selectStatusEl.value) {
 			data.statusId = selectStatusEl.value;
 		} else {
 			delete data.statusId;

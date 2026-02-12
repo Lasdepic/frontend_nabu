@@ -8,13 +8,29 @@ let STATUS_CACHE = null;
 let CORPUS_CACHE = null;
 
 async function getStatusById(statusId) {
-	if (!statusId) return null;
+	if (statusId === null || statusId === undefined || statusId === '') return null;
+
+	// Si on reçoit déjà un objet statut, on le renvoie tel quel.
+	if (typeof statusId === 'object') return statusId;
+
+	// Normalisation: les IDs arrivent parfois en string (avec espaces) ou le backend peut renvoyer un nom.
+	const trimmed = typeof statusId === 'string' ? statusId.trim() : statusId;
+
+	// Convention métier: 0 (ou "0") signifie "INEXISTANT" (pas forcément de ligne en base)
+	if (trimmed === 0 || trimmed === '0' || Number(trimmed) === 0) {
+		return { idStatus: 0, nameStatus: 'INEXISTANT' };
+	}
+
+	// Si ce n'est pas un nombre, on considère que c'est un nom de statut.
+	if (typeof trimmed === 'string' && trimmed !== '' && Number.isNaN(Number(trimmed))) {
+		return { nameStatus: trimmed };
+	}
 	if (!STATUS_CACHE) {
 		const result = await fetchAllStatus();
 		const list = result?.data || result;
 		STATUS_CACHE = Array.isArray(list) ? list : [];
 	}
-	return STATUS_CACHE.find(s => (s.idstatus ?? s.idStatus ?? s.id) == statusId) || null;
+	return STATUS_CACHE.find(s => (s.idstatus ?? s.idStatus ?? s.id) == trimmed) || null;
 }
 
 async function getCorpusNameById(corpusId) {
@@ -34,11 +50,6 @@ const formatDate = date =>
 		month: 'long',
 		year: 'numeric'
 	}) : '';
-
-const copyToClipboard = text => {
-	navigator.clipboard.writeText(text || '');
-	showToast('Copié dans le presse-papier');
-};
 
 function showToast(message, success = true) {
 	const toast = document.createElement('div');
@@ -85,7 +96,9 @@ export async function afficherCardPaquetModal(paquet) {
 }
 
 export async function createCardPaquet(paquet) {
-		const status = await getStatusById(paquet.statusId);
+		const statusRef = paquet?.status ?? paquet?.statusId ?? paquet?.nameStatus ?? paquet?.name_status ?? null;
+		// Si aucun statut n'est fourni, on affiche par défaut "INEXISTANT".
+		const status = await getStatusById(statusRef ?? 0);
 		const statusMeta = normalizeStatus(status);
 		const corpusName =
 			(paquet?.corpusName ?? paquet?.name_corpus) ||
