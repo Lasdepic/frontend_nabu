@@ -2,10 +2,32 @@
 import { fetchAllStatus } from '../../API/paquet/status.js';
 
 function normalizeStatusLabel(label) {
-    return String(label || '')
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, '_');
+
+    let text = label == null ? '' : String(label);
+
+    text = text.trim().toUpperCase();
+
+    text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    text = text.replace(/[^A-Z0-9]+/g, '_');
+
+    text = text.replace(/^_+|_+$/g, '');
+
+    return text;
+}
+
+function getStatusLabel(status) {
+    return (
+        status?.nameStatus ||
+        status?.nom ||
+        status?.name ||
+        status?.label ||
+        'Statut inconnu'
+    );
+}
+
+function getStatusId(status) {
+    return status?.idStatus || status?.id || status?.ID || '';
 }
 
 export async function createStatusSelector({
@@ -27,23 +49,40 @@ export async function createStatusSelector({
     select.appendChild(defaultOption);
 
     let statusList = await fetchAllStatus();
-    if (statusList && statusList.data) statusList = statusList.data;
-    if (Array.isArray(statusList)) {
-        const allowedSet = Array.isArray(allowedLabels) && allowedLabels.length
-            ? new Set(allowedLabels.map(normalizeStatusLabel))
-            : null;
+    if (statusList && statusList.data) {
+        statusList = statusList.data;
+    }
 
-        statusList.forEach(status => {
-            const label = status.nameStatus || status.nom || status.name || status.label || 'Statut inconnu';
-            if (allowedSet && !allowedSet.has(normalizeStatusLabel(label))) {
-                return;
+    // allowedLabels = liste optionnelle de labels autorisés
+    let allowedSet = null;
+    if (Array.isArray(allowedLabels) && allowedLabels.length > 0) {
+        allowedSet = new Set();
+        for (const allowedLabel of allowedLabels) {
+            allowedSet.add(normalizeStatusLabel(allowedLabel));
+        }
+    }
+
+    if (Array.isArray(statusList)) {
+        for (const status of statusList) {
+            const label = getStatusLabel(status);
+            const normalizedLabel = normalizeStatusLabel(label);
+
+            // Si on a une liste autorisée, on filtre
+            if (allowedSet && !allowedSet.has(normalizedLabel)) {
+                continue;
             }
+
             const option = document.createElement('option');
-            option.value = status.idStatus || status.id || status.ID || '';
+            option.value = getStatusId(status);
             option.textContent = label;
-            if (value && option.value == value) option.selected = true;
+            option.dataset.normalizedLabel = normalizedLabel;
+
+            if (value && option.value == value) {
+                option.selected = true;
+            }
+
             select.appendChild(option);
-        });
+        }
     }
 
     if (typeof onChange === 'function') {

@@ -8,13 +8,29 @@ let STATUS_CACHE = null;
 let CORPUS_CACHE = null;
 
 async function getStatusById(statusId) {
-	if (!statusId) return null;
+	if (statusId === null || statusId === undefined || statusId === '') return null;
+
+	// Si on reçoit déjà un objet statut, on le renvoie tel quel.
+	if (typeof statusId === 'object') return statusId;
+
+	// Normalisation: les IDs arrivent parfois en string (avec espaces) ou le backend peut renvoyer un nom.
+	const trimmed = typeof statusId === 'string' ? statusId.trim() : statusId;
+
+	// Convention métier: 0 (ou "0") signifie "INEXISTANT" (pas forcément de ligne en base)
+	if (trimmed === 0 || trimmed === '0' || Number(trimmed) === 0) {
+		return { idStatus: 0, nameStatus: 'INEXISTANT' };
+	}
+
+	// Si ce n'est pas un nombre, on considère que c'est un nom de statut.
+	if (typeof trimmed === 'string' && trimmed !== '' && Number.isNaN(Number(trimmed))) {
+		return { nameStatus: trimmed };
+	}
 	if (!STATUS_CACHE) {
 		const result = await fetchAllStatus();
 		const list = result?.data || result;
 		STATUS_CACHE = Array.isArray(list) ? list : [];
 	}
-	return STATUS_CACHE.find(s => (s.idstatus ?? s.idStatus ?? s.id) == statusId) || null;
+	return STATUS_CACHE.find(s => (s.idstatus ?? s.idStatus ?? s.id) == trimmed) || null;
 }
 
 async function getCorpusNameById(corpusId) {
@@ -28,16 +44,25 @@ async function getCorpusNameById(corpusId) {
 	return (corpus?.name_corpus ?? corpus?.nameCorpus) || null;
 }
 
-const formatDate = date =>
-	date ? new Date(date).toLocaleDateString('fr-FR', {
+const formatDate = date => {
+	if (!date) return '';
+	const parsed = new Date(date);
+	if (Number.isNaN(parsed.getTime())) return '';
+	return parsed.toLocaleString('fr-FR', {
 		day: 'numeric',
 		month: 'long',
-		year: 'numeric'
-	}) : '';
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	});
+};
 
-const copyToClipboard = text => {
-	navigator.clipboard.writeText(text || '');
-	showToast('Copié dans le presse-papier');
+const formatUserName = paquet => {
+	const prenom = (paquet?.userPrenom ?? paquet?.prenom ?? '').toString().trim();
+	const nom = (paquet?.userNom ?? paquet?.nom ?? '').toString().trim();
+	const full = `${prenom} ${nom}`.trim();
+	return full || 'Inconnu';
 };
 
 function showToast(message, success = true) {
@@ -85,7 +110,9 @@ export async function afficherCardPaquetModal(paquet) {
 }
 
 export async function createCardPaquet(paquet) {
-		const status = await getStatusById(paquet.statusId);
+		const statusRef = paquet?.status ?? paquet?.statusId ?? paquet?.nameStatus ?? paquet?.name_status ?? null;
+		// Si aucun statut n'est fourni, on affiche par défaut "INEXISTANT".
+		const status = await getStatusById(statusRef ?? 0);
 		const statusMeta = normalizeStatus(status);
 		const corpusName =
 			(paquet?.corpusName ?? paquet?.name_corpus) ||
@@ -108,6 +135,7 @@ export async function createCardPaquet(paquet) {
 				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
 				       <li class="list-group-item"><strong>Status :</strong> ${renderStatusBadge(status)}</li>
 				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
+				       <li class="list-group-item"><strong>Modifié par :</strong> ${formatUserName(paquet)}</li>
 			       </ul>
 					       <div class="row mb-3 text-center">
 						       <div class="col d-flex flex-column align-items-center">

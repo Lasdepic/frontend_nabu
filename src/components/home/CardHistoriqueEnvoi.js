@@ -17,6 +17,7 @@ const CINES_VALID_ICON_SVG = createStatusIconSvg({ fill: '#75FB4C', pathD: CINES
 const CINES_INVALID_ICON_SVG = createStatusIconSvg({ fill: '#EA3323', pathD: CINES_INVALID_ICON_PATH });
 
 const CINES_VALIDATION_CACHE = new Map();
+const PAQUET_STATUS_SYNC_CACHE = new Map();
 
 async function isItemValidatedByCines(itemId) {
     if (!itemId || itemId === '-') return false;
@@ -40,6 +41,37 @@ async function isItemValidatedByCines(itemId) {
         // En cas d'erreur (réseau / API), on considère "non validé" pour rester conforme à la demande.
         CINES_VALIDATION_CACHE.set(cacheKey, false);
         return false;
+    }
+}
+
+function getMostRecentItemId(historiques) {
+    if (!Array.isArray(historiques) || historiques.length === 0) return null;
+    // Le backend trie par dateEnvoi DESC : on prend le 1er itemsId non vide.
+    for (const h of historiques) {
+        const itemsId = h?.items_id ?? h?.itemsId;
+        const normalized = itemsId === undefined || itemsId === null ? '' : String(itemsId).trim();
+        if (normalized && normalized !== '-') return normalized;
+    }
+    return null;
+}
+
+async function syncPaquetStatusWithCinesValidation({ paquetCote, itemId, validated }) {
+    if (!paquetCote || !itemId) return;
+    const cacheKey = `${String(paquetCote)}::${String(itemId)}`;
+    const cached = PAQUET_STATUS_SYNC_CACHE.get(cacheKey);
+    if (cached === validated) return;
+
+    // Règle demandée : non validé => ERREUR, validé => ENVOI_OK
+    // Convention existante dans sendding.js : 3 = ENVOI_OK, 5 = ENVOI_EN_ERREUR
+    const statusId = validated ? 3 : 5;
+
+    try {
+        const { mettreAJourStatutPaquet } = await import('../../pages/download/statutPaquet.js');
+        if (typeof mettreAJourStatutPaquet !== 'function') return;
+        await mettreAJourStatutPaquet(String(paquetCote), statusId, false);
+        PAQUET_STATUS_SYNC_CACHE.set(cacheKey, validated);
+    } catch {
+        // Silencieux : ne doit pas casser l'affichage de l'historique.
     }
 }
 
@@ -207,6 +239,27 @@ export async function afficherCardHistoriqueEnvoi(paquetCote) {
 
     // Remplacement des placeholders par les icônes de validation CINES
     updateCinesValidationIcons(overlay);
+
+    // Synchronisation du statut du paquet sur la validation CINES (basée sur le dernier envoi connu).
+    // Si le dernier itemId n'est pas validé, le paquet passe en ERREUR ; sinon ENVOI_OK.
+    const mostRecentItemId = getMostRecentItemId(historiques);
+    if (mostRecentItemId) {
+        try {
+            const validated = await isItemValidatedByCines(mostRecentItemId);
+            await syncPaquetStatusWithCinesValidation({
+                paquetCote,
+                itemId: mostRecentItemId,
+                validated
+            });
+        } catch {
+            // En cas d'erreur (réseau/API), isItemValidatedByCines renvoie déjà false.
+            await syncPaquetStatusWithCinesValidation({
+                paquetCote,
+                itemId: mostRecentItemId,
+                validated: false
+            });
+        }
+    }
 }
 
 function showToast(message, success = true) {
