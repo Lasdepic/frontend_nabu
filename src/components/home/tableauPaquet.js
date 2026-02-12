@@ -4,10 +4,32 @@ import { fetchAllStatus } from '../../API/paquet/status.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from '../editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
-import { renderStatusBadge } from '../status/badgeStatus.js';
+import { formatStatusLabel, renderStatusBadge } from '../status/badgeStatus.js';
 
 let dataTablesLoader = null;
 let editPaquetLoader = null;
+let statusFilterHook = null;
+
+function getStatusId(status) {
+    return status?.idstatus ?? status?.idStatus ?? status?.id ?? null;
+}
+
+function getStatusLabel(status) {
+    const raw = status?.name_status ?? status?.nameStatus ?? status?.name ?? status?.statut ?? null;
+    return formatStatusLabel(raw, 'Inconnu');
+}
+
+function removeStatusFilterHookIfAny() {
+    if (!statusFilterHook) return;
+    if (!window.$ || !window.$.fn || !window.$.fn.dataTable || !window.$.fn.dataTable.ext || !window.$.fn.dataTable.ext.search) {
+        statusFilterHook = null;
+        return;
+    }
+    const searchArr = window.$.fn.dataTable.ext.search;
+    const idx = searchArr.indexOf(statusFilterHook);
+    if (idx !== -1) searchArr.splice(idx, 1);
+    statusFilterHook = null;
+}
 
 function escapeHtml(value) {
     const str = value === null || value === undefined ? '' : String(value);
@@ -76,6 +98,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.body.appendChild(conteneur);
     }
 
+    removeStatusFilterHookIfAny();
+
     if (window.$ && window.$.fn && window.$.fn.DataTable) {
         if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
             $('#tableau-paquet').DataTable().destroy();
@@ -96,6 +120,15 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet tbody tr:hover { background-color: #f5f5f5; }
             #tableau-paquet td .toDo-checkbox { cursor: pointer; }
 
+            /* Controls layout */
+            #tableau-paquet-search-row .dataTables_filter { width: 100%; }
+            #tableau-paquet-search-row .dataTables_filter label { width: 100%; display: flex; justify-content: center; align-items: center; gap: .5rem; margin: 0; }
+            #tableau-paquet-search-row .dataTables_filter input { max-width: 380px; }
+
+            #tableau-paquet-controls-row .dataTables_length { margin: 0; }
+            #tableau-paquet-controls-row .dataTables_length label { display: flex; align-items: center; gap: .5rem; margin: 0; }
+            #tableau-paquet-controls-row .dataTables_length select { width: auto; }
+
             @media (min-width: 992px) {
                 #tableau-paquet thead th {
                     position: sticky;
@@ -109,10 +142,13 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     conteneur.innerHTML = `
     <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
-        <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2">
+        <div id="tableau-paquet-search-row" class="row g-2 mb-2">
+            <div class="col-12 d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
+        </div>
+        <div id="tableau-paquet-controls-row" class="row g-2 align-items-center justify-content-between mb-2">
             <div class="col-auto" id="tableau-paquet-length-col"></div>
             <div class="col-auto" id="tableau-paquet-date-filter-col"></div>
-            <div class="col d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
+            <div class="col-auto" id="tableau-paquet-status-filter-col"></div>
         </div>
         <div id="tableau-paquet-scroll">
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
@@ -142,6 +178,9 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 $('#tableau-paquet').DataTable().order([7, sortOrder]).draw();
             }
         });
+        dateFilter.style.marginLeft = '0';
+        dateFilter.classList.add('input-group-sm');
+        dateFilter.style.minWidth = '220px';
         dateFilterCol.appendChild(dateFilter);
     }
 
@@ -176,7 +215,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     const statusById = new Map();
     statusList.forEach(s => {
-        const id = s?.idstatus ?? s?.idStatus ?? s?.id;
+        const id = getStatusId(s);
         if (id !== null && id !== undefined && id !== '') {
             statusById.set(String(id), s);
         }
@@ -192,6 +231,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     const filteredPaquets = filterCorpusId
         ? paquets.filter(p => String(p.corpusId) === String(filterCorpusId))
         : paquets;
+
+    let selectedStatusId = '';
 
     const table = $('#tableau-paquet').DataTable({
         data: filteredPaquets.map(p => ({
@@ -232,6 +273,70 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
     });
 
+    // Filtre par statut (filtrage exact sur l'ID)
+    if (window.$ && window.$.fn && window.$.fn.dataTable && window.$.fn.dataTable.ext && window.$.fn.dataTable.ext.search) {
+        statusFilterHook = function(settings, data, dataIndex) {
+            if (!settings || !settings.nTable || settings.nTable.id !== 'tableau-paquet') return true;
+            if (!selectedStatusId) return true;
+            const rowData = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex]._aData : null;
+            const rowStatusId = rowData?.statusId ?? null;
+            return String(rowStatusId) === String(selectedStatusId);
+        };
+        window.$.fn.dataTable.ext.search.push(statusFilterHook);
+    }
+
+    // UI filtre statut
+    const statusFilterCol = conteneur.querySelector('#tableau-paquet-status-filter-col');
+    if (statusFilterCol) {
+        statusFilterCol.innerHTML = '';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'input-group input-group-sm align-items-center';
+        wrapper.style.minWidth = '240px';
+
+        const label = document.createElement('label');
+        label.className = 'input-group-text px-2';
+        label.htmlFor = 'status-filter-select';
+        label.textContent = 'Statut';
+
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        select.id = 'status-filter-select';
+        select.setAttribute('aria-label', 'Filtrer par statut');
+        select.style.width = '120px';
+        
+        select.style.textAlign = 'center';
+        select.style.textAlignLast = 'center';
+
+        const optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = 'Tous';
+        optAll.style.textAlign = 'center';
+        select.appendChild(optAll);
+
+        const sortedStatuses = [...statusList]
+            .map(s => ({ id: getStatusId(s), label: getStatusLabel(s) }))
+            .filter(s => s.id !== null && s.id !== undefined && String(s.id).length)
+            .sort((a, b) => String(a.label).localeCompare(String(b.label), 'fr'));
+
+        for (const s of sortedStatuses) {
+            const opt = document.createElement('option');
+            opt.value = String(s.id);
+            opt.textContent = s.label;
+            opt.style.textAlign = 'center';
+            select.appendChild(opt);
+        }
+
+        select.addEventListener('change', () => {
+            selectedStatusId = select.value;
+            table.draw();
+        });
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(select);
+        statusFilterCol.appendChild(wrapper);
+    }
+
     table.on('draw.dt', function() {
         const info = table.page.info();
         const nbTotal = info.recordsDisplay;
@@ -248,13 +353,18 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         const dataTablesLength = conteneur.querySelector('.dataTables_length');
         const dataTablesFilter = conteneur.querySelector('.dataTables_filter');
         const dataTablesPaginate = conteneur.querySelector('.dataTables_paginate');
-        if (lengthCol && dataTablesLength) { lengthCol.innerHTML = ''; lengthCol.appendChild(dataTablesLength); }
+        if (lengthCol && dataTablesLength) {
+            lengthCol.innerHTML = '';
+            lengthCol.appendChild(dataTablesLength);
+        }
         if (filterCol && dataTablesFilter && !filterMoved) {
             filterCol.innerHTML = '';
             filterCol.appendChild(dataTablesFilter);
             dataTablesFilter.style.width = '100%';
+            dataTablesFilter.style.maxWidth = '520px';
             dataTablesFilter.style.display = 'flex';
             dataTablesFilter.style.justifyContent = 'center';
+            dataTablesFilter.style.margin = '0 auto';
             if (!document.getElementById('btn-ajouter-paquet')) {
                 const btn = document.createElement('button');
                 btn.id = 'btn-ajouter-paquet';
