@@ -7,21 +7,32 @@ import { normalizeStatus, renderStatusBadge } from '../status/badgeStatus.js';
 let STATUS_CACHE = null;
 let CORPUS_CACHE = null;
 
+function escapeHtml(value) {
+	if (value === null || value === undefined) return '';
+	return String(value)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+function displayValue(value, fallback = '—') {
+	const v = String(value ?? '').trim();
+	return v ? escapeHtml(v) : fallback;
+}
+
 async function getStatusById(statusId) {
 	if (statusId === null || statusId === undefined || statusId === '') return null;
 
-	// Si on reçoit déjà un objet statut, on le renvoie tel quel.
 	if (typeof statusId === 'object') return statusId;
 
-	// Normalisation: les IDs arrivent parfois en string (avec espaces) ou le backend peut renvoyer un nom.
 	const trimmed = typeof statusId === 'string' ? statusId.trim() : statusId;
 
-	// Convention métier: 0 (ou "0") signifie "INEXISTANT" (pas forcément de ligne en base)
 	if (trimmed === 0 || trimmed === '0' || Number(trimmed) === 0) {
 		return { idStatus: 0, nameStatus: 'INEXISTANT' };
 	}
 
-	// Si ce n'est pas un nombre, on considère que c'est un nom de statut.
 	if (typeof trimmed === 'string' && trimmed !== '' && Number.isNaN(Number(trimmed))) {
 		return { nameStatus: trimmed };
 	}
@@ -110,73 +121,131 @@ export async function afficherCardPaquetModal(paquet) {
 }
 
 export async function createCardPaquet(paquet) {
-		const statusRef = paquet?.status ?? paquet?.statusId ?? paquet?.nameStatus ?? paquet?.name_status ?? null;
-		// Si aucun statut n'est fourni, on affiche par défaut "INEXISTANT".
-		const status = await getStatusById(statusRef ?? 0);
-		const statusMeta = normalizeStatus(status);
-		const corpusName =
-			(paquet?.corpusName ?? paquet?.name_corpus) ||
-			(await getCorpusNameById(paquet?.corpusId)) ||
-			'';
-		const card = document.createElement('div');
-		card.className = 'card shadow border-0';
-		const userRole = localStorage.getItem('userRole');
-		// Le bouton supprimer n'est visible que pour l'admin et si le status n'est pas ENVOI_OK
-		const isDeleteVisible = userRole === 'admin' && statusMeta?.name !== 'ENVOI_OK';
-		// Le bouton historique est toujours visible
-		card.innerHTML = `
-		       <div class="card-body">
-			       <ul class="list-group list-group-flush mb-3">
-				       <li class="list-group-item"><strong>Dossier :</strong> ${paquet.folderName ?? ''}</li>
-				       <li class="list-group-item"><strong>Cote :</strong> ${paquet.cote ?? ''}</li>
-				       <li class="list-group-item"><strong>Corpus :</strong> ${corpusName}</li>
-				       <li class="list-group-item"><strong>Répertoire des images autre :</strong> ${paquet.microFilmImage ?? ''}</li>
-				       <li class="list-group-item"><strong>Répertoire des images couleurs :</strong> ${paquet.imageColor ?? ''}</li>
-				       <li class="list-group-item"><strong>Recherche archivage :</strong> ${paquet.searchArchiving ?? ''}</li>
-				       <li class="list-group-item"><strong>Status :</strong> ${renderStatusBadge(status)}</li>
-				       <li class="list-group-item"><strong>Dernière modification :</strong> ${formatDate(paquet.lastmodifDate)}</li>
-				       <li class="list-group-item"><strong>Modifié par :</strong> ${formatUserName(paquet)}</li>
-			       </ul>
-					       <div class="row mb-3 text-center">
-						       <div class="col d-flex flex-column align-items-center">
-							       <span>À faire</span>
-							       <span class="badge bg-${paquet.toDo ? 'success' : 'secondary'} mt-1">${paquet.toDo ? 'Oui' : 'Non'}</span>
-						       </div>
-						       <div class="col d-flex flex-column align-items-center">
-							       <span>Multi-volume</span>
-							       <span class="badge bg-${paquet.facileTest ? 'success' : 'secondary'} mt-1">${paquet.facileTest ? 'Oui' : 'Non'}</span>
-						       </div>
-						       <div class="col d-flex flex-column align-items-center">
-							       <span>SIP</span>
-							       <span class="badge bg-${paquet.filedSip ? 'success' : 'secondary'} mt-1">${paquet.filedSip ? 'Oui' : 'Non'}</span>
-						       </div>
-					       </div>
-			       <div class="mb-3">
-				       <strong>Commentaire</strong>
-				       <div class="border rounded p-2 bg-light">${paquet.commentaire ?? ''}</div>
-			       </div>
-				  <div class="d-flex justify-content-center gap-3 flex-wrap">
-				   <button class="btn btn-primary px-4" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
-				   ${isDeleteVisible ? `<button class="btn btn-danger px-4" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
-				   <button class="btn btn-success px-4" id="historique"><i class="bi bi-clock-history"></i> Historique d'envoi</button>
-				  </div>
-		       </div>
-	       `;
-	       card.querySelector('#edit').addEventListener('click', async () => {
-		       document.getElementById('paquet-modal-overlay')?.remove();
-		       const { afficherCardPaquetEditModal } = await import('../editPaquet/editPaquet.js');
-		       afficherCardPaquetEditModal(paquet);
-	       });
-	       if (isDeleteVisible) {
-		       card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
-	       }
-			       if (card.querySelector('#historique')) {
-				       card.querySelector('#historique').addEventListener('click', async () => {
-					       const { afficherCardHistoriqueEnvoi } = await import('./CardHistoriqueEnvoi.js');
-					       afficherCardHistoriqueEnvoi(paquet.cote);
-				       });
-			       }
-	       return card;
+	const statusRef = paquet?.status ?? paquet?.statusId ?? paquet?.nameStatus ?? paquet?.name_status ?? null;
+	// Si aucun statut n'est fourni, on affiche par défaut "INEXISTANT".
+	const status = await getStatusById(statusRef ?? 0);
+	const statusMeta = normalizeStatus(status);
+	const corpusName =
+		displayValue(paquet?.corpusName ?? paquet?.name_corpus, '') ||
+		displayValue(await getCorpusNameById(paquet?.corpusId), '') ||
+		'';
+
+	const card = document.createElement('div');
+	card.className = 'card shadow border-0';
+
+	const userRole = localStorage.getItem('userRole');
+	// Le bouton supprimer n'est visible que pour l'admin et si le status n'est pas ENVOI_OK
+	const isDeleteVisible = userRole === 'admin' && statusMeta?.name !== 'ENVOI_OK';
+
+	const dossier = displayValue(paquet?.folderName);
+	const cote = displayValue(paquet?.cote);
+	const microFilmImage = displayValue(paquet?.microFilmImage);
+	const imageColor = displayValue(paquet?.imageColor);
+	const searchArchiving = displayValue(paquet?.searchArchiving);
+	const commentaire = displayValue(paquet?.commentaire, '');
+	const lastModif = formatDate(paquet?.lastmodifDate) || '—';
+	const modifiedBy = escapeHtml(formatUserName(paquet));
+
+	card.innerHTML = `
+		<div class="card-header bg-white border-0 pb-0">
+			<div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+				<div class="flex-grow-1">
+					<div class="text-muted small">Paquet</div>
+					<div class="h5 mb-1 fw-bold">${cote}</div>
+					<div class="text-muted small">Dossier : <span class="fw-semibold text-body">${dossier}</span></div>
+				</div>
+				<div class="text-end">${renderStatusBadge(status)}</div>
+			</div>
+			<hr class="mt-3 mb-0" />
+		</div>
+
+		<div class="card-body pt-3">
+			<div class="row g-3">
+				<div class="col-12 col-lg-6">
+					<div class="border rounded p-3 h-100 bg-light">
+						<div class="fw-bold mb-2">Métadonnées</div>
+						<div class="d-flex justify-content-between gap-3">
+							<span class="text-muted">Corpus</span>
+							<span class="fw-semibold text-end">${corpusName || '—'}</span>
+						</div>
+						<div class="d-flex justify-content-between gap-3 mt-2">
+							<span class="text-muted">Recherche archivage</span>
+							<span class="fw-semibold text-end">${searchArchiving}</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-12 col-lg-6">
+					<div class="border rounded p-3 h-100 bg-light">
+						<div class="fw-bold mb-2">Chemins</div>
+						<div class="mb-2">
+							<div class="text-muted small">Répertoire images autre</div>
+							<div class="fw-semibold text-break">${microFilmImage}</div>
+						</div>
+						<div>
+							<div class="text-muted small">Répertoire images couleurs</div>
+							<div class="fw-semibold text-break">${imageColor}</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row g-3 mt-1">
+				<div class="col-12">
+					<div class="border rounded p-3">
+						<div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+							<div class="d-flex gap-4 flex-wrap">
+								<div class="text-center">
+									<div class="text-muted small">À faire</div>
+									<span class="badge bg-${paquet?.toDo ? 'success' : 'secondary'}">${paquet?.toDo ? 'Oui' : 'Non'}</span>
+								</div>
+								<div class="text-center">
+									<div class="text-muted small">Multi-volume</div>
+									<span class="badge bg-${paquet?.facileTest ? 'success' : 'secondary'}">${paquet?.facileTest ? 'Oui' : 'Non'}</span>
+								</div>
+								<div class="text-center">
+									<div class="text-muted small">SIP</div>
+									<span class="badge bg-${paquet?.filedSip ? 'success' : 'secondary'}">${paquet?.filedSip ? 'Oui' : 'Non'}</span>
+								</div>
+							</div>
+							<div class="text-muted small text-end">
+								<div>Dernière modification : <span class="fw-semibold text-body">${escapeHtml(lastModif)}</span></div>
+								<div>Modifié par : <span class="fw-semibold text-body">${modifiedBy}</span></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-3">
+				<div class="fw-bold mb-2">Commentaire</div>
+				<div class="border rounded p-3 bg-light">${commentaire || '<span class="text-muted">—</span>'}</div>
+			</div>
+
+			<div class="d-flex justify-content-center justify-content-md-end gap-2 flex-wrap mt-4">
+				<button class="btn btn-primary" id="edit"><i class="bi bi-pencil"></i> Modifier</button>
+				${isDeleteVisible ? `<button class="btn btn-danger" id="delete"><i class="bi bi-trash"></i> Supprimer</button>` : ''}
+				<button class="btn btn-success" id="historique"><i class="bi bi-clock-history"></i> Historique d'envoi</button>
+			</div>
+		</div>
+	`;
+
+	card.querySelector('#edit').addEventListener('click', async () => {
+		document.getElementById('paquet-modal-overlay')?.remove();
+		const { afficherCardPaquetEditModal } = await import('../editPaquet/editPaquet.js');
+		afficherCardPaquetEditModal(paquet);
+	});
+
+	if (isDeleteVisible) {
+		card.querySelector('#delete').addEventListener('click', () => showDeleteConfirmation(paquet));
+	}
+
+	card.querySelector('#historique')?.addEventListener('click', async () => {
+		const { afficherCardHistoriqueEnvoi } = await import('./CardHistoriqueEnvoi.js');
+		afficherCardHistoriqueEnvoi(paquet.cote);
+	});
+
+	return card;
 }
 
 async function showDeleteConfirmation(paquet) {
