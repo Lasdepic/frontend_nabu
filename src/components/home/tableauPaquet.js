@@ -9,6 +9,12 @@ import { formatStatusLabel, renderStatusBadge } from '../status/badgeStatus.js';
 let dataTablesLoader = null;
 let editPaquetLoader = null;
 let statusFilterHook = null;
+let renderSequence = 0;
+
+function setTableCount(conteneurId, count) {
+    const badge = document.querySelector(`[data-count-for="${conteneurId}"]`);
+    if (badge) badge.textContent = String(count);
+}
 
 function getStatusId(status) {
     return status?.idstatus ?? status?.idStatus ?? status?.id ?? null;
@@ -54,6 +60,22 @@ function ensureJQueryAvailable() {
     }
 }
 
+function destroyPaquetDataTableIfAny() {
+    const $ = window.jQuery || window.$;
+    if (!$ || !$.fn || !$.fn.DataTable) return;
+
+    const selector = '#tableau-paquet';
+    try {
+        if ($.fn.DataTable.isDataTable(selector)) {
+            const instance = $(selector).DataTable();
+            instance.clear();
+            instance.destroy(true);
+        }
+    } catch (_) {
+        // no-op : on évite de casser le rendu si DataTables est dans un état incohérent.
+    }
+}
+
 function getEditPaquetOnce() {
     if (!editPaquetLoader) {
         editPaquetLoader = import('../../API/paquet/paquet.js');
@@ -90,7 +112,55 @@ function loadDataTablesOnce() {
     return dataTablesLoader;
 }
 
+function getDataTablesFrenchLanguage() {
+    return {
+        processing: 'Traitement en cours...',
+        search: 'Rechercher\u00a0:',
+        lengthMenu: 'Afficher _MENU_ entrées',
+        info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+        infoEmpty: 'Affichage de 0 à 0 sur 0 entrées',
+        infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+        infoPostFix: '',
+        loadingRecords: 'Chargement en cours...',
+        zeroRecords: 'Aucun élément correspondant trouvé',
+        emptyTable: 'Aucune donnée disponible dans le tableau',
+        paginate: {
+            first: 'Premier',
+            previous: 'Précédent',
+            next: 'Suivant',
+            last: 'Dernier'
+        },
+        aria: {
+            sortAscending: ': activer pour trier la colonne par ordre croissant',
+            sortDescending: ': activer pour trier la colonne par ordre décroissant'
+        },
+        select: {
+            rows: {
+                _: '%d lignes sélectionnées',
+                0: 'Aucune ligne sélectionnée',
+                1: '1 ligne sélectionnée'
+            }
+        },
+        buttons: {
+            copy: 'Copier',
+            copyTitle: 'Copie dans le presse-papiers',
+            copySuccess: {
+                1: '1 ligne copiée dans le presse-papiers',
+                _: '%d lignes copiées dans le presse-papiers'
+            },
+            colvis: 'Visibilité des colonnes',
+            collection: 'Collection',
+            print: 'Imprimer',
+            csv: 'CSV',
+            excel: 'Excel',
+            pdf: 'PDF'
+        }
+    };
+}
+
 export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
+    const currentRender = ++renderSequence;
+
     let conteneur = document.getElementById(conteneurId);
     if (!conteneur) {
         conteneur = document.createElement('div');
@@ -98,26 +168,47 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.body.appendChild(conteneur);
     }
 
-    removeStatusFilterHookIfAny();
+    const isStale = () => currentRender !== renderSequence;
 
-    if (window.$ && window.$.fn && window.$.fn.DataTable) {
-        if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
-            $('#tableau-paquet').DataTable().destroy();
+    // Badge compteur dans le header (page d'accueil)
+    setTableCount(conteneurId, '…');
+
+    function setLoading(isLoading) {
+        if (isLoading) {
+            conteneur.setAttribute('aria-busy', 'true');
+            if (!conteneur.querySelector('[data-tableau-loading]')) {
+                const loading = document.createElement('div');
+                loading.className = 'text-center text-muted small py-3';
+                loading.setAttribute('data-tableau-loading', '');
+                loading.innerHTML = `
+                    <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                    Chargement...
+                `;
+                conteneur.prepend(loading);
+            }
+        } else {
+            conteneur.removeAttribute('aria-busy');
+            conteneur.querySelectorAll('[data-tableau-loading]').forEach((e) => e.remove());
         }
     }
+
+    removeStatusFilterHookIfAny();
+
+    // Si un rendu précédent avait déjà initialisé DataTables, on le détruit.
+    destroyPaquetDataTableIfAny();
 
     if (!document.getElementById('tableau-paquet-style')) {
         const style = document.createElement('style');
         style.id = 'tableau-paquet-style';
         style.innerHTML = `
             #tableau-paquet { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; }
-            #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid #343A40; text-align: center !important; vertical-align: middle !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            #tableau-paquet thead th { border-bottom: 2px solid #343A40; background-color: #212529; color: #fff; }
+            #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid var(--bs-border-color, #343A40); text-align: center !important; vertical-align: middle !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #tableau-paquet thead th { border-bottom: 2px solid var(--bs-border-color, #343A40); background-color: var(--bs-dark, #212529); color: #fff; }
             #tableau-paquet td.folderName { max-width: 150px; }
             #tableau-paquet td.commentaire { max-width: 250px; }
             #tableau-paquet td { line-height: 1.5em; }
             #tableau-paquet tbody tr { cursor: pointer; }
-            #tableau-paquet tbody tr:hover { background-color: #f5f5f5; }
+            #tableau-paquet tbody tr:hover { background-color: var(--bs-tertiary-bg, #f5f5f5); }
             #tableau-paquet td .toDo-checkbox { cursor: pointer; }
 
             /* Controls layout */
@@ -129,10 +220,23 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet-controls-row .dataTables_length label { display: flex; align-items: center; gap: .5rem; margin: 0; }
             #tableau-paquet-controls-row .dataTables_length select { width: auto; }
 
+            @media (max-width: 767.98px) {
+                #tableau-paquet-controls-row .dataTables_length,
+                #tableau-paquet-controls-row .dataTables_length label {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                #tableau-paquet-controls-row .input-group {
+                    width: 100%;
+                    min-width: 0 !important;
+                }
+            }
+
             @media (min-width: 992px) {
                 #tableau-paquet thead th {
                     position: sticky;
-                    top: 0;
+                    top: var(--nabu-sticky-top, 100px);
                     z-index: 5;
                 }
             }
@@ -140,15 +244,17 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         document.head.appendChild(style);
     }
 
+    setLoading(true);
+
     conteneur.innerHTML = `
-    <div id="tableau-paquet-scroll-wrap" style="max-width:1200px; margin-left:10px;">
+    <div id="tableau-paquet-scroll-wrap" style="width:100%;">
         <div id="tableau-paquet-search-row" class="row g-2 mb-2">
             <div class="col-12 d-flex justify-content-center align-items-center gap-2" id="tableau-paquet-filter-col"></div>
         </div>
-        <div id="tableau-paquet-controls-row" class="row g-2 align-items-center justify-content-between mb-2">
-            <div class="col-auto" id="tableau-paquet-length-col"></div>
-            <div class="col-auto" id="tableau-paquet-date-filter-col"></div>
-            <div class="col-auto" id="tableau-paquet-status-filter-col"></div>
+        <div id="tableau-paquet-controls-row" class="row g-2 align-items-center mb-2 justify-content-md-between">
+            <div class="col-12 col-md-auto d-flex justify-content-center justify-content-md-start" id="tableau-paquet-length-col"></div>
+            <div class="col-12 col-md-auto d-flex justify-content-center" id="tableau-paquet-date-filter-col"></div>
+            <div class="col-12 col-md-auto d-flex justify-content-center justify-content-md-end" id="tableau-paquet-status-filter-col"></div>
         </div>
         <div id="tableau-paquet-scroll">
             <table id="tableau-paquet" class="table table-striped table-hover align-middle" style="width:100%; min-width:700px;">
@@ -200,13 +306,19 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             fetchAllStatus()
         ]);
     } catch (err) {
+        setTableCount(conteneurId, 0);
         conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des données.</div>';
+        return;
+    }
+
+    if (isStale()) {
         return;
     }
     const corpusList = corpusResult?.data || corpusResult;
     const paquets = paquetsResult?.data || paquetsResult;
     const statusList = statusResult?.data || statusResult;
     if (!paquets || !Array.isArray(paquets) || !corpusList || !Array.isArray(corpusList) || !statusList || !Array.isArray(statusList)) {
+        setTableCount(conteneurId, 0);
         conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des paquets, corpus ou statuts.</div>';
         return;
     }
@@ -224,21 +336,36 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     try {
         await loadDataTablesOnce();
     } catch (err) {
+        setLoading(false);
         conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement du composant de tableau.</div>';
         return;
     }
+
+    if (isStale()) {
+        return;
+    }
+
+    // Cas intermittent typique : plusieurs appels concurrents finissent par arriver ici.
+    // On redétruit juste avant l'init pour éviter "Cannot reinitialise DataTable".
+    destroyPaquetDataTableIfAny();
 
     const filteredPaquets = filterCorpusId
         ? paquets.filter(p => String(p.corpusId) === String(filterCorpusId))
         : paquets;
 
+    setTableCount(conteneurId, filteredPaquets.length);
+
     let selectedStatusId = '';
 
+    const $ = window.jQuery || window.$;
     const table = $('#tableau-paquet').DataTable({
         data: filteredPaquets.map(p => ({
             ...p,
             lastmodifDateISO: (p.lastmodifDate || p.date) ? new Date(p.lastmodifDate || p.date).toISOString() : ''
         })),
+        initComplete: () => {
+            if (!isStale()) setLoading(false);
+        },
         columns: [
             { data: 'folderName', className: 'folderName', render: v => {
                 const safe = escapeHtml(v || '-');
@@ -267,10 +394,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
         order: [[7, 'desc']],
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json',
-            info: `<span class='badge bg-info'><span>nombre de paquet : <span id='nb-paquet-affiche'>${filteredPaquets.length}</span></span></span>`
-        }
+        info: false,
+        language: getDataTablesFrenchLanguage()
     });
 
     // Filtre par statut (filtrage exact sur l'ID)
@@ -344,6 +469,9 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         if (span) {
             span.textContent = nbTotal;
         }
+
+        // Maintient le badge du header synchro avec les filtres/recherches DataTables.
+        setTableCount(conteneurId, nbTotal);
     });
 
     let filterMoved = false;

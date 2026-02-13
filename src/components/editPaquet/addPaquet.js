@@ -5,6 +5,15 @@ import { createTypeDocumentSelector } from '../selecteur/selectTypeDocument.js';
 import { createStatusSelector } from '../selecteur/selectStatus.js';
 
 export function afficherCardPaquetAddModal(defaults = {}) {
+	function escapeHtml(value) {
+		return String(value ?? '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
+
 	function normalizeStatusLabel(label) {
 		const raw = String(label || '')
 			.trim()
@@ -48,32 +57,19 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 	const oldModal = document.getElementById('paquet-modal-overlay');
 	if (oldModal) oldModal.remove();
 
-	// Overlay Bootstrap style
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
-	overlay.className = 'modal fade show';
+	overlay.className = 'paquet-modal-overlay modal fade show';
 	overlay.style.display = 'block';
-	overlay.style.background = 'rgba(0,0,0,0.5)';
-	overlay.style.position = 'fixed';
-	overlay.style.top = 0;
-	overlay.style.left = 0;
-	overlay.style.width = '100vw';
-	overlay.style.height = '100vh';
-	overlay.style.zIndex = 2000;
 
-	// Modal dialog
 	const modal = document.createElement('div');
-	modal.className = 'modal-dialog modal-dialog-centered';
-	modal.style.maxWidth = '700px';
-	modal.style.width = '100%';
+	modal.className = 'modal-dialog modal-dialog-centered paquet-modal-dialog';
 
-	// Modal content
 	const modalContent = document.createElement('div');
-	modalContent.className = 'modal-content shadow-lg';
+	modalContent.className = 'modal-content shadow-lg paquet-modal-content';
 
-	// Modal header
 	const modalHeader = document.createElement('div');
-	modalHeader.className = 'modal-header';
+	modalHeader.className = 'modal-header paquet-modal-header';
 	const title = document.createElement('h5');
 	title.className = 'modal-title fw-bold text-center w-100';
 	title.textContent = 'Création d’un paquet';
@@ -87,16 +83,15 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 	modalHeader.appendChild(title);
 	modalHeader.appendChild(closeBtn);
 
-	// Modal body (form)
 	const form = document.createElement('form');
-	form.className = 'modal-body';
+	form.className = 'modal-body paquet-modal-body';
 	const connectedUserId = localStorage.getItem('userId') || '';
 	form.innerHTML = `
 		<div class="container-fluid">
 			<div class="row g-3">
 				<div class="col-md-6">
 					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="folderName" required value="${defaults.folderName ? defaults.folderName.replace(/&/g, '&amp;').replace(/</g, '&lt;') : ''}">
+					<input type="text" class="form-control" name="folderName" required value="${escapeHtml(defaults.folderName)}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images autre :</label>
@@ -104,7 +99,7 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="cote" required value="${defaults.cote ? defaults.cote.replace(/&/g, '&amp;').replace(/</g, '&lt;') : ''}">
+					<input type="text" class="form-control" name="cote" required value="${escapeHtml(defaults.cote)}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
@@ -126,7 +121,7 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 					<label class="form-label">Recherche Archivage :</label>
 					<input type="text" class="form-control" name="searchArchiving">
 				</div>
-				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
+				<div class="col-md-12 paquet-modal-flags d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="toDo" id="addToDo">
 						<label class="form-check-label" for="addToDo">A faire :</label>
@@ -145,8 +140,8 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 					<textarea class="form-control" name="comment" rows="4"></textarea>
 				</div>
 			</div>
-			<div class="d-flex justify-content-center mt-4">
-				<button type="submit" class="btn btn-success px-5">Créer</button>
+			<div class="d-flex justify-content-center mt-4 paquet-modal-actions">
+				<button type="submit" class="btn btn-primary px-5">Enregistrer</button>
 			</div>
 		</div>
 		<input type="hidden" name="usersId" value="${connectedUserId}">

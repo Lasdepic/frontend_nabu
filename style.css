@@ -1,17 +1,21 @@
 html.page-sendding, body.page-sendding {
 	overflow-y: hidden !important;
 }
+
+:root {
+	--nabu-sticky-top: 100px;
+}
 /* Sticky latéral pour la colonne droite, sans modifier la hauteur ni overflow */
 .side-fixed {
 	position: sticky;
-	top: 100px;
+	top: var(--nabu-sticky-top, 100px);
 }
 
 /* Sticky sidebar (desktop uniquement) */
 @media (min-width: 992px) {
 	.sticky-lg {
 		position: sticky;
-		top: 100px;
+		top: var(--nabu-sticky-top, 100px);
 		align-self: flex-start;
 	}
 
@@ -37,6 +41,7 @@ input[type="number"]::-webkit-outer-spin-button {
 	margin: 0;
 }
 input[type="number"] {
+	appearance: textfield;
 	-moz-appearance: textfield;
 }
 #tableau-paquet .form-control[type="number"]::-webkit-inner-spin-button, 
@@ -45,6 +50,7 @@ input[type="number"] {
 	margin: 0;
 }
 #tableau-paquet .form-control[type="number"] {
+	appearance: textfield;
 	-moz-appearance: textfield;
 }
 #corpus-select, .select2-container--default .select2-selection--single {
@@ -70,6 +76,40 @@ input[type="number"] {
 .page-sendding {
 	background-color: var(--bs-body-bg);
 	min-height: 100vh;
+}
+
+.cines-panel {
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius-lg);
+	background-color: var(--bs-body-bg);
+	padding: 1rem;
+}
+
+.cines-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.cines-panel__meta {
+	border-top: 1px solid var(--bs-border-color);
+	padding-top: 0.75rem;
+}
+
+.cines-code {
+	font-family: var(--bs-font-monospace);
+	font-size: 0.875em;
+}
+
+.cines-pre {
+	white-space: pre-wrap;
+	word-break: break-word;
+	background-color: var(--bs-tertiary-bg);
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius);
+	padding: 0.75rem;
 }
 
 .border-dashed {
@@ -158,7 +198,7 @@ input[type="number"] {
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	z-index: 3000;
+	z-index: 2000;
 }
 
 .modal-dialog-center {
@@ -166,11 +206,49 @@ input[type="number"] {
 	width: 100%;
 }
 
+/* Modales création / édition paquet (harmonisées) */
+.paquet-modal-dialog {
+	max-width: 760px;
+	width: calc(100% - 2rem);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.paquet-modal-content {
+	border-radius: var(--bs-border-radius-lg);
+	border: 1px solid var(--bs-border-color);
+}
+
+.paquet-modal-header {
+	border-bottom: 0;
+	padding-bottom: 0.5rem;
+}
+
+.paquet-modal-body {
+	padding-top: 0.25rem;
+}
+
+.paquet-modal-flags {
+	background-color: var(--bs-tertiary-bg);
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius);
+	padding: 0.75rem;
+}
+
+.paquet-modal-actions .btn {
+	min-width: 160px;
+}
+
 /* Mini tableaux (sidebar) */
 .paquet-mini-item {
 	cursor: pointer;
 	user-select: none;
 	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* Mini cartes centrées (évite l'effet "plein écran" sur mobile) */
+.paquet-mini-card {
+	max-width: 420px;
 }
 
 .paquet-mini-item--todo {
