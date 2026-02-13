@@ -14,6 +14,54 @@ window.sendding = {
   xhrGlobal: null
 };
 
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function isCinesVerificationActive() {
+  return Boolean(window.sendding?.cinesPollToken && window.sendding.cinesPollToken.stopped === false);
+}
+
+function activerAvertissementNavigationPendantVerification() {
+  const message = "Une vérification CINES est en cours. Quitter ou naviguer ailleurs interrompra l'affichage de l'état. Continuer ?";
+
+  const beforeUnloadHandler = (e) => {
+    if (!isCinesVerificationActive()) return;
+    e.preventDefault();
+    e.returnValue = message;
+    return message;
+  };
+
+  const clickHandler = (e) => {
+    if (!isCinesVerificationActive()) return;
+    const link = e.target?.closest?.('a[href]');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+
+    const ok = window.confirm(message);
+    if (!ok) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+  document.addEventListener('click', clickHandler, true);
+
+  return () => {
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
+    document.removeEventListener('click', clickHandler, true);
+  };
+}
+
 // === UI ===
 async function initialiserUI() {
   document.body.classList.add('page-sendding');
@@ -240,7 +288,7 @@ async function envoyerAuCinesImmediat(nomFichier) {
   const etat = document.getElementById('etatUpload');
   if (etat) {
     etat.className = 'alert alert-info text-center';
-    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi au CINES...";
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Envoi au CINES…";
   }
 
   return callVitamAPI('envoi-immediat', {
@@ -255,7 +303,7 @@ async function programmerEnvoiCinesDiffere(nomFichier) {
   const etat = document.getElementById('etatUpload');
   if (etat) {
     etat.className = 'alert alert-info text-center';
-    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Mise en place de l’envoi différé...";
+    etat.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Mise en place de l’envoi différé…";
   }
 
   return callVitamAPI('programmation-differe', {
@@ -288,7 +336,7 @@ async function verifierStatutCines(
   itemid,
   {
     intervalMs = 5000,
-    maxTries = 60,
+    maxTries = Infinity,
     onTick = null,
     shouldStop = null
   } = {}
@@ -358,18 +406,36 @@ async function gererEnvoi() {
   const majSucces = () => {
     if (operationTerminee) {
       uploadEnCours = false;
-      afficherStatus(`<i class="fa-solid fa-check-circle me-2"></i>Le fichier <strong>${fichier.name}</strong> a été envoyé avec succès sur le serveur.`, 'success');
+      afficherStatus(`<i class="fa-solid fa-check-circle me-2"></i>Le fichier <strong>${escapeHtml(fichier.name)}</strong> a été envoyé avec succès sur le serveur.`, 'success');
 
       const etat = document.getElementById('etatUpload');
       if (etat) {
-        etat.className = 'alert alert-light text-center';
+        etat.className = 'alert alert-light text-start';
         etat.innerHTML = `
-          <div class='fw-semibold mb-2'>Envoyer le paquet au CINES ?</div>
-          <div id='cines' class='d-flex gap-2 justify-content-center flex-wrap'>
-            <button type='button' id='btnCinesImmediat' class='btn btn-success btn-sm px-4 fw-bold'>Immédiat</button>
-            <button type='button' id='btnCinesDiffere' class='btn btn-outline-secondary btn-sm px-4 fw-bold'>Différé</button>
+          <div class='cines-panel'>
+            <div class='cines-panel__header'>
+              <div class='fw-semibold'>
+                <i class='fa-solid fa-paper-plane me-2'></i>
+                Transmission vers le CINES
+              </div>
+              <span class='badge text-bg-secondary'>À lancer</span>
+            </div>
+
+            <div class='small text-muted mt-1'>
+              Choisissez le mode d’envoi pour le paquet <span class='fw-semibold'>${escapeHtml(fichier.name)}</span>.
+            </div>
+
+            <div id='cines' class='cines-panel__actions mt-3 d-flex gap-2 justify-content-center flex-wrap'>
+              <button type='button' id='btnCinesImmediat' class='btn btn-success btn-sm px-4 fw-semibold'>
+                <i class='fa-solid fa-bolt me-2'></i>Immédiat
+              </button>
+              <button type='button' id='btnCinesDiffere' class='btn btn-outline-secondary btn-sm px-4 fw-semibold'>
+                <i class='fa-solid fa-clock me-2'></i>Différé
+              </button>
+            </div>
+
+            <div id='cines_status' class='small text-muted mt-2' aria-live='polite'></div>
           </div>
-          <div id='cines_status' class='small text-muted mt-2'></div>
         `;
       }
 
@@ -399,6 +465,7 @@ async function gererEnvoi() {
           verrouillerChoix(true);
           const cinesPollToken = { stopped: false };
           window.sendding.cinesPollToken = cinesPollToken;
+          const cleanupNavigationWarning = activerAvertissementNavigationPendantVerification();
 
           const getUiStatus = (status) => {
             switch (status) {
@@ -431,32 +498,58 @@ async function gererEnvoi() {
               const etat = document.getElementById('etatUpload');
               if (etat) {
                 const ui = getUiStatus('ENVOI_EN_COURS');
-                etat.className = 'alert alert-info text-center';
+                etat.className = 'alert alert-info text-start';
                 etat.innerHTML = `
-                  <div class='d-flex align-items-center justify-content-between flex-wrap gap-2'>
-                    <div class='fw-semibold text-start'>
-                      <i class='fa-solid fa-paper-plane me-2'></i>
-                      Envoi au CINES
+                  <div class='cines-panel'>
+                    <div class='cines-panel__header'>
+                      <div class='fw-semibold'>
+                        <i class='fa-solid fa-paper-plane me-2'></i>
+                        Envoi au CINES
+                      </div>
+                      <span id='cines_status_badge' class='badge ${ui.badgeClass}'>${ui.iconHtml}${ui.label}</span>
                     </div>
-                    <span id='cines_status_badge' class='badge ${ui.badgeClass}'>${ui.iconHtml}${ui.label}</span>
-                  </div>
 
-                  ${resultat?.message ? `<div class='small mt-2 text-start'><span class='text-muted'>Message :</span> ${resultat.message}</div>` : ''}
+                    <div class='small mt-2'>
+                      <div class='d-flex flex-wrap gap-3 align-items-center'>
+                        <span><i class='fa-solid fa-file-zipper me-1'></i><span class='text-muted'>Fichier :</span> <span class='fw-semibold'>${escapeHtml(fichier.name)}</span></span>
+                        <span><i class='fa-solid fa-hashtag me-1'></i><span class='text-muted'>ItemId :</span> <code class='cines-code'>${escapeHtml(resultat.itemid)}</code></span>
+                      </div>
 
-                  <div class='small mt-2 text-start'>
-                    <div><span class='text-muted'>ItemId :</span> <code>${resultat.itemid}</code></div>
-                    <div class='d-flex flex-wrap gap-3 mt-1'>
-                      <span><i class='fa-solid fa-clock me-1'></i><span class='text-muted'>Dernière vérification :</span> <span id='cines_last_check'>—</span></span>
-                      <span><i class='fa-solid fa-rotate me-1'></i><span class='text-muted'>Vérification :</span> <span id='cines_attempt'>0</span>/<span id='cines_max'>60</span> <span class='text-muted'>(toutes les 5s)</span></span>
+                      ${resultat?.message ? `
+                        <div class='mt-2'>
+                          <span class='text-muted'>Message :</span>
+                          <span id='cines_server_message'>${escapeHtml(resultat.message)}</span>
+                        </div>
+                      ` : ''}
                     </div>
-                    <div id='cines_polling_message' class='text-muted mt-1'></div>
+
+                    <div class='cines-panel__meta small mt-3'>
+                      <div class='d-flex flex-wrap gap-3'>
+                        <span class='cines-meta-item'>
+                          <i class='fa-solid fa-clock me-1'></i>
+                          <span class='text-muted'>Dernière vérification :</span>
+                          <span id='cines_last_check'>—</span>
+                        </span>
+                        <span class='cines-meta-item'>
+                          <i class='fa-solid fa-rotate me-1'></i>
+                          <span class='text-muted'>Vérification :</span>
+                          <span id='cines_attempt'>0</span>/<span id='cines_max'>∞</span>
+                          <span class='text-muted'>(toutes les 5 s)</span>
+                        </span>
+                      </div>
+
+                      <div id='cines_polling_message' class='text-muted mt-1'></div>
+                      <div class='text-muted mt-1'>
+                        <i class='fa-solid fa-circle-info me-1'></i>
+                        Gardez cette page ouverte pendant la vérification.
+                      </div>
+                    </div>
                   </div>
                 `;
               }
 
               const statut = await verifierStatutCines(resultat.itemid, {
                 intervalMs: 5000,
-                maxTries: 60,
                 shouldStop: () => {
                   const etatEl = document.getElementById('etatUpload');
                   return cinesPollToken.stopped || !etatEl;
@@ -469,7 +562,9 @@ async function gererEnvoi() {
                   const msgEl = document.getElementById('cines_polling_message');
 
                   if (attemptEl) attemptEl.textContent = String(meta.attempt);
-                  if (maxEl) maxEl.textContent = String(meta.maxTries);
+                  if (maxEl) {
+                    maxEl.textContent = meta.maxTries === Infinity ? '∞' : String(meta.maxTries);
+                  }
                   if (lastCheckEl) lastCheckEl.textContent = new Date().toLocaleTimeString();
 
                   const ui = getUiStatus(data?.status);
@@ -510,8 +605,16 @@ async function gererEnvoi() {
                       console.warn('Déplacement (OK) non effectué', e);
                     }
 
-                    etatFinal.className = 'alert alert-success text-center';
-                    etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Paquet validé par le CINES (OK).";
+                    etatFinal.className = 'alert alert-success text-start';
+                    etatFinal.innerHTML = `
+                      <div class='cines-panel'>
+                        <div class='cines-panel__header'>
+                          <div class='fw-semibold'><i class='fa-solid fa-circle-check me-2'></i>Validation CINES</div>
+                          <span class='badge text-bg-success'><i class='fa-solid fa-check me-1'></i>OK</span>
+                        </div>
+                        <div class='small mt-2'>Paquet validé par le CINES (bordereau : <span class='fw-semibold'>OK</span>).</div>
+                      </div>
+                    `;
                   } else {
                     await mettreAJourStatutPaquet(fichier.name, 5);
 
@@ -523,12 +626,30 @@ async function gererEnvoi() {
                       console.warn('Déplacement (KO) non effectué', e);
                     }
 
-                    etatFinal.className = 'alert alert-danger text-center';
-                    etatFinal.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Paquet non validé par le CINES : statut mis en erreur.";
+                    etatFinal.className = 'alert alert-danger text-start';
+                    etatFinal.innerHTML = `
+                      <div class='cines-panel'>
+                        <div class='cines-panel__header'>
+                          <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Validation CINES</div>
+                          <span class='badge text-bg-danger'><i class='fa-solid fa-xmark me-1'></i>KO</span>
+                        </div>
+                        <div class='small mt-2'>Bordereau non OK : statut mis en erreur et déplacement en répertoire KO.</div>
+                      </div>
+                    `;
                   }
                 } else if (statut?.status === 'STATUT_NON_DISPONIBLE') {
-                  etatFinal.className = 'alert alert-warning text-center';
-                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
+                  etatFinal.className = 'alert alert-warning text-start';
+                  etatFinal.innerHTML = `
+                    <div class='cines-panel'>
+                      <div class='cines-panel__header'>
+                        <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES indisponible</div>
+                        <span class='badge text-bg-warning'><i class='fa-solid fa-triangle-exclamation me-1'></i>À vérifier</span>
+                      </div>
+                      <div class='small mt-2'>
+                        Statut : <span class='fw-semibold'>${escapeHtml(statut?.status ?? 'inconnu')}</span>${statut?.message ? ` — ${escapeHtml(statut.message)}` : ''}
+                      </div>
+                    </div>
+                  `;
                 } else if (statut?.status === 'ENVOI_EN_ERREUR') {
                   await mettreAJourStatutPaquet(fichier.name, 5);
 
@@ -538,36 +659,84 @@ async function gererEnvoi() {
                     console.warn('Déplacement (KO) non effectué', e);
                   }
 
-                  etatFinal.className = 'alert alert-danger text-center';
-                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES en erreur${statut?.message ? ` (${statut.message})` : ''}.`;
+                  etatFinal.className = 'alert alert-danger text-start';
+                  etatFinal.innerHTML = `
+                    <div class='cines-panel'>
+                      <div class='cines-panel__header'>
+                        <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES en erreur</div>
+                        <span class='badge text-bg-danger'><i class='fa-solid fa-xmark me-1'></i>Erreur</span>
+                      </div>
+                      <div class='small mt-2'>${statut?.message ? escapeHtml(statut.message) : 'Le CINES a retourné un statut en erreur.'}</div>
+                    </div>
+                  `;
                 } else if (statut?.status === 'VERIFICATION_ARRETEE') {
-                  etatFinal.className = 'alert alert-warning text-center';
-                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>${statut?.message ?? 'Vérification arrêtée.'}`;
+                  etatFinal.className = 'alert alert-warning text-start';
+                  etatFinal.innerHTML = `
+                    <div class='cines-panel'>
+                      <div class='cines-panel__header'>
+                        <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Vérification interrompue</div>
+                        <span class='badge text-bg-warning'><i class='fa-solid fa-pause me-1'></i>Arrêt</span>
+                      </div>
+                      <div class='small mt-2'>${escapeHtml(statut?.message ?? 'Vérification arrêtée.')}</div>
+                    </div>
+                  `;
                 } else {
                   await mettreAJourStatutPaquet(fichier.name, 5);
-                  etatFinal.className = 'alert alert-warning text-center';
-                  etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
+                  etatFinal.className = 'alert alert-warning text-start';
+                  etatFinal.innerHTML = `
+                    <div class='cines-panel'>
+                      <div class='cines-panel__header'>
+                        <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES</div>
+                        <span class='badge text-bg-warning'><i class='fa-solid fa-triangle-exclamation me-1'></i>À vérifier</span>
+                      </div>
+                      <div class='small mt-2'>
+                        Statut : <span class='fw-semibold'>${escapeHtml(statut?.status ?? 'inconnu')}</span>${statut?.message ? ` — ${escapeHtml(statut.message)}` : ''}
+                      </div>
+                    </div>
+                  `;
                 }
               }
             } else {
               await mettreAJourStatutPaquet(fichier.name, 5);
               const etat = document.getElementById('etatUpload');
               if (etat) {
-                etat.className = 'alert alert-danger text-center';
-                etat.innerHTML = `${resultat?.message ?? "Erreur lors de l'envoi au CINES."}${resultat?.output ? `<br/>${resultat.output}` : ''}`;
+                etat.className = 'alert alert-danger text-start';
+                const msg = escapeHtml(resultat?.message ?? "Erreur lors de l'envoi au CINES.");
+                const out = resultat?.output ? escapeHtml(resultat.output) : '';
+                etat.innerHTML = `
+                  <div class='cines-panel'>
+                    <div class='cines-panel__header'>
+                      <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES</div>
+                      <span class='badge text-bg-danger'><i class='fa-solid fa-xmark me-1'></i>Erreur</span>
+                    </div>
+                    <div class='small mt-2'>${msg}</div>
+                    ${out ? `<pre class='cines-pre small mt-2 mb-0'>${out}</pre>` : ''}
+                  </div>
+                `;
               }
             }
           } catch (e) {
             await mettreAJourStatutPaquet(fichier.name, 5);
             const etat = document.getElementById('etatUpload');
             if (etat) {
-              etat.className = 'alert alert-danger text-center';
-              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de l'envoi immédiat au CINES.";
+              etat.className = 'alert alert-danger text-start';
+              etat.innerHTML = `
+                <div class='cines-panel'>
+                  <div class='cines-panel__header'>
+                    <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi immédiat au CINES</div>
+                    <span class='badge text-bg-danger'><i class='fa-solid fa-xmark me-1'></i>Erreur</span>
+                  </div>
+                  <div class='small mt-2'>Une erreur est survenue pendant l’envoi immédiat.</div>
+                </div>
+              `;
             }
           } finally {
             if (window.sendding?.cinesPollToken) {
               window.sendding.cinesPollToken.stopped = true;
             }
+            try {
+              cleanupNavigationWarning?.();
+            } catch {}
             nettoyerEtReset();
           }
         };
@@ -576,7 +745,7 @@ async function gererEnvoi() {
       if (btnDiffere) {
         btnDiffere.onclick = async () => {
           verrouillerChoix(true);
-          if (cinesStatus) cinesStatus.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Programmation du différé...";
+          if (cinesStatus) cinesStatus.innerHTML = "<i class='fa-solid fa-cog fa-spin me-2'></i>Programmation du différé…";
           try {
             await mettreAJourStatutPaquet(fichier.name, 8);
             const resultat = await programmerEnvoiCinesDiffere(fichier.name);
@@ -594,25 +763,48 @@ async function gererEnvoi() {
               }
 
               if (etat) {
-                etat.className = 'alert alert-success text-center';
-                etat.innerHTML = "<i class='fa-solid fa-check me-2'></i>Mise en place de l'envoi différé OK";
+                etat.className = 'alert alert-success text-start';
+                etat.innerHTML = `
+                  <div class='cines-panel'>
+                    <div class='cines-panel__header'>
+                      <div class='fw-semibold'><i class='fa-solid fa-check me-2'></i>Envoi différé</div>
+                      <span class='badge text-bg-success'><i class='fa-solid fa-check me-1'></i>Programmé</span>
+                    </div>
+                    <div class='small mt-2'>La programmation de l’envoi différé est en place.</div>
+                  </div>
+                `;
               }
             } else {
               await mettreAJourStatutPaquet(fichier.name, 5);
               if (etat) {
-                etat.className = 'alert alert-warning text-center';
-                etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Impossible de mettre en place l'envoi différé";
-                if (resultat?.error) {
-                  etat.innerHTML += `<br/>${resultat.error}`;
-                }
+                etat.className = 'alert alert-warning text-start';
+                const err = resultat?.error ? escapeHtml(resultat.error) : '';
+                etat.innerHTML = `
+                  <div class='cines-panel'>
+                    <div class='cines-panel__header'>
+                      <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi différé</div>
+                      <span class='badge text-bg-warning'><i class='fa-solid fa-triangle-exclamation me-1'></i>Non programmé</span>
+                    </div>
+                    <div class='small mt-2'>Impossible de mettre en place l’envoi différé.</div>
+                    ${err ? `<div class='small mt-1 text-muted'>${err}</div>` : ''}
+                  </div>
+                `;
               }
             }
           } catch (e) {
             await mettreAJourStatutPaquet(fichier.name, 5);
             const etat = document.getElementById('etatUpload');
             if (etat) {
-              etat.className = 'alert alert-danger text-center';
-              etat.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Erreur lors de la programmation du différé.";
+              etat.className = 'alert alert-danger text-start';
+              etat.innerHTML = `
+                <div class='cines-panel'>
+                  <div class='cines-panel__header'>
+                    <div class='fw-semibold'><i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi différé</div>
+                    <span class='badge text-bg-danger'><i class='fa-solid fa-xmark me-1'></i>Erreur</span>
+                  </div>
+                  <div class='small mt-2'>Erreur lors de la programmation du différé.</div>
+                </div>
+              `;
             }
           } finally {
             nettoyerEtReset();

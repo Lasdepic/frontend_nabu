@@ -78,6 +78,40 @@ input[type="number"] {
 	min-height: 100vh;
 }
 
+.cines-panel {
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius-lg);
+	background-color: var(--bs-body-bg);
+	padding: 1rem;
+}
+
+.cines-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.cines-panel__meta {
+	border-top: 1px solid var(--bs-border-color);
+	padding-top: 0.75rem;
+}
+
+.cines-code {
+	font-family: var(--bs-font-monospace);
+	font-size: 0.875em;
+}
+
+.cines-pre {
+	white-space: pre-wrap;
+	word-break: break-word;
+	background-color: var(--bs-tertiary-bg);
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius);
+	padding: 0.75rem;
+}
+
 .border-dashed {
 	border-style: dashed !important;
 }
