@@ -53,7 +53,7 @@ input[type="number"] {
 	appearance: textfield;
 	-moz-appearance: textfield;
 }
-#corpus-select, .select2-container--default .select2-selection--single {
+.corpus-select, .select2-container--default .select2-selection--single {
 	width: 100% !important;
 	font-size: 1em !important;
 	padding: 8px 16px !important;
@@ -63,7 +63,7 @@ input[type="number"] {
 	text-align: center !important;
 }
 
-#corpus-select option {
+.corpus-select option {
 	text-align: center !important;
 	direction: ltr !important;
 }

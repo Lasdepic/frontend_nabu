@@ -2,12 +2,27 @@ import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
 let selectedCorpus = null;
 
+let corpusSelectInstanceCounter = 0;
 
-export function selectCorpus(onSelect, defaultValue) {
+
+export function selectCorpus(onSelect, defaultValue, options = {}) {
 	const container = document.createElement('div');
 	const select = document.createElement('select');
-	select.className = 'select-small';
-	select.id = 'corpus-select';
+	select.className = 'select-small corpus-select';
+	const instanceId = options?.id || `corpus-select-${++corpusSelectInstanceCounter}`;
+	select.id = instanceId;
+
+	const hasSelect2 = () => !!(window.$ && window.$.fn && window.$.fn.select2);
+	const tryDestroySelect2 = () => {
+		if (!hasSelect2()) return;
+		try {
+			const $el = window.$(select);
+			if ($el && $el.data && $el.data('select2')) {
+				$el.select2('destroy');
+			}
+		} catch (_) {
+		}
+	};
 
 	fetchAllCorpus().then(corpusList => {
 		if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
@@ -33,10 +48,7 @@ export function selectCorpus(onSelect, defaultValue) {
 			sortedCorpus.forEach(corpus => {
 				const option = document.createElement('option');
 				option.value = corpus.idcorpus;
-				option.innerHTML = corpus.desciption_corpus
-				  ? `<span class='corpus-nom'>${corpus.name_corpus}</span><br><span class='corpus-desc'>${corpus.desciption_corpus}</span>`
-				  : `<span class='corpus-nom'>${corpus.name_corpus}</span>`;
-				option.textContent = corpus.name_corpus; 
+				option.textContent = corpus.name_corpus;
 				option.dataset.corpus = JSON.stringify({
 					id: corpus.idcorpus,
 					nom: corpus.name_corpus,
@@ -46,17 +58,16 @@ export function selectCorpus(onSelect, defaultValue) {
 			});
 
 			setTimeout(() => {
-				// Sélectionner la valeur par défaut si fournie
 				if (defaultValue) {
 					select.value = defaultValue;
-					if (window.$ && window.$.fn && window.$.fn.select2) {
+					if (hasSelect2()) {
 						window.$(select).val(defaultValue).trigger('change');
 					} else {
-						// Déclencher manuellement l'événement change si pas de select2
 						select.dispatchEvent(new Event('change'));
 					}
 				}
-				if (window.$ && window.$.fn && window.$.fn.select2) {
+				if (hasSelect2()) {
+					tryDestroySelect2();
 					window.$(select).select2({
 						width: 'resolve',
 						templateResult: formatCorpusOption,
@@ -66,12 +77,12 @@ export function selectCorpus(onSelect, defaultValue) {
 					});
 					const style = document.createElement('style');
 					style.innerHTML = `
-						#corpus-select + .select2 .select2-selection__rendered {
+						#${instanceId} + .select2 .select2-selection__rendered {
 							text-align: center !important;
 							width: 100%;
 							font-weight: bold;
 						}
-						.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
+						.select2-results__option[role="option"][id^="select2-${instanceId}-result"][id$="-ALL"] {
 							text-align: center !important;
 						}
 					`;
@@ -81,7 +92,7 @@ export function selectCorpus(onSelect, defaultValue) {
 		}
 	});
 
-	select.addEventListener('change', (e) => {
+	const handleSelectionChange = () => {
 		const selectedOption = select.options[select.selectedIndex];
 		if (selectedOption && selectedOption.value === 'ALL') {
 			selectedCorpus = 'ALL';
@@ -99,28 +110,14 @@ export function selectCorpus(onSelect, defaultValue) {
 				onSelect(null);
 			}
 		}
-	});
+	};
 
+	select.addEventListener('change', handleSelectionChange);
 	setTimeout(() => {
-		if (window.$ && window.$.fn && window.$.fn.select2) {
-			window.$(select).on('change', function (e) {
-				const selectedOption = select.options[select.selectedIndex];
-				if (selectedOption && selectedOption.value === 'ALL') {
-					selectedCorpus = 'ALL';
-					if (typeof onSelect === 'function') {
-						onSelect('ALL');
-					}
-				} else if (selectedOption && selectedOption.dataset.corpus) {
-					selectedCorpus = JSON.parse(selectedOption.dataset.corpus);
-					if (typeof onSelect === 'function') {
-						onSelect(selectedCorpus);
-					}
-				} else {
-					selectedCorpus = null;
-					if (typeof onSelect === 'function') {
-						onSelect(null);
-					}
-				}
+		if (hasSelect2()) {
+			window.$(select).on('change.selectCorpus', (e) => {
+				if (e && e.originalEvent) return;
+				handleSelectionChange();
 			});
 		}
 	}, 0);
