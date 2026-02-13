@@ -266,6 +266,24 @@ async function programmerEnvoiCinesDiffere(nomFichier) {
   });
 }
 
+async function deplacerPaquetOK(nomFichier) {
+  return callVitamAPI('deplacement-ok', {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    }
+  });
+}
+
+async function deplacerPaquetKO(nomFichier) {
+  return callVitamAPI('deplacement-ko', {
+    method: 'GET',
+    headers: {
+      'X-File-Name': nomFichier
+    }
+  });
+}
+
 async function verifierStatutCines(
   itemid,
   {
@@ -485,10 +503,26 @@ async function gererEnvoi() {
 
                   if (validatedByCines) {
                     await mettreAJourStatutPaquet(fichier.name, 3);
+
+                    try {
+                      await deplacerPaquetOK(fichier.name);
+                    } catch (e) {
+                      console.warn('Déplacement (OK) non effectué', e);
+                    }
+
                     etatFinal.className = 'alert alert-success text-center';
                     etatFinal.innerHTML = "<i class='fa-solid fa-circle-check me-2'></i>Paquet validé par le CINES (OK).";
                   } else {
                     await mettreAJourStatutPaquet(fichier.name, 5);
+
+                    // Même si le statut CINES est ENVOI_OK, si le bordereau n'est pas OK
+                    // on considère l'envoi en erreur et on déplace dans le répertoire KO.
+                    try {
+                      await deplacerPaquetKO(fichier.name);
+                    } catch (e) {
+                      console.warn('Déplacement (KO) non effectué', e);
+                    }
+
                     etatFinal.className = 'alert alert-danger text-center';
                     etatFinal.innerHTML = "<i class='fa-solid fa-triangle-exclamation me-2'></i>Paquet non validé par le CINES : statut mis en erreur.";
                   }
@@ -497,6 +531,13 @@ async function gererEnvoi() {
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Statut CINES : ${statut?.status ?? 'inconnu'}${statut?.message ? ` (${statut.message})` : ''}`;
                 } else if (statut?.status === 'ENVOI_EN_ERREUR') {
                   await mettreAJourStatutPaquet(fichier.name, 5);
+
+                  try {
+                    await deplacerPaquetKO(fichier.name);
+                  } catch (e) {
+                    console.warn('Déplacement (KO) non effectué', e);
+                  }
+
                   etatFinal.className = 'alert alert-danger text-center';
                   etatFinal.innerHTML = `<i class='fa-solid fa-triangle-exclamation me-2'></i>Envoi CINES en erreur${statut?.message ? ` (${statut.message})` : ''}.`;
                 } else if (statut?.status === 'VERIFICATION_ARRETEE') {
