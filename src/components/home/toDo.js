@@ -2,8 +2,13 @@
 import { fetchAllPaquets } from '../../API/paquet/paquet.js';
 import { afficherCardPaquetModal } from '../home/cardPaquet.js';
 
+function setMiniTableCount(conteneurId, count) {
+	const badge = document.querySelector(`[data-count-for="${conteneurId}"]`);
+	if (badge) badge.textContent = String(count);
+}
+
 // Affiche le tableau des paquets à faire 
-export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-conteneur', filterCorpusId = null) {
+export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-conteneur') {
 	let conteneur = document.getElementById(conteneurId);
 	if (!conteneur) {
 		conteneur = document.createElement('div');
@@ -15,12 +20,9 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 	conteneur.style.display = 'block';
 	conteneur.style.zIndex = '1000';
 
-	// Titre + état de chargement
+	// État de chargement (header géré par la page)
+	setMiniTableCount(conteneurId, '…');
 	conteneur.innerHTML = `
-		<div class="bg-dark text-white d-flex justify-content-between align-items-center py-2 px-2 mb-3 rounded-1" style="font-size:1rem;font-weight:400;">
-			<span>A Faire</span>
-			<span class="badge bg-light text-dark" aria-label="Nombre de paquets">...</span>
-		</div>
 		<div class="text-center text-muted small" data-mini-table-loading>
 			<div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
 			Chargement...
@@ -31,15 +33,13 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 	const paquetsResult = await fetchAllPaquets();
 	let paquets = paquetsResult && paquetsResult.data ? paquetsResult.data : paquetsResult;
 	if (!paquets || !Array.isArray(paquets)) {
+		setMiniTableCount(conteneurId, 0);
 		conteneur.innerHTML += '<div class="alert alert-danger">Erreur lors du chargement des paquets.</div>';
 		return;
 	}
 	// Filtre : paquets à faire 
 	paquets = paquets.filter(p => p.toDo);
-	if (filterCorpusId !== null && filterCorpusId !== undefined && filterCorpusId !== '') {
-		paquets = paquets.filter(p => String(p.corpusId) === String(filterCorpusId));
-	}
-	// Tri stable (si date dispo) : plus récent d'abord
+	// Tri (si date dispo) : plus récent d'abord
 	paquets.sort((a, b) => {
 		const da = a?.lastmodifDate || a?.date || null;
 		const db = b?.lastmodifDate || b?.date || null;
@@ -48,8 +48,7 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 		return tb - ta;
 	});
 
-	const badgeCount = conteneur.querySelector('.badge.bg-light.text-dark');
-	if (badgeCount) badgeCount.textContent = String(paquets.length);
+	setMiniTableCount(conteneurId, paquets.length);
 	const loading = conteneur.querySelector('[data-mini-table-loading]');
 	if (loading) loading.remove();
 	if (paquets.length === 0) {
@@ -136,24 +135,20 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 	}
 
 	function renderPage(page) {
-		conteneur.querySelectorAll('.row.g-2, .pagination-paquet').forEach(e => e.remove());
+		conteneur.querySelectorAll('[data-mini-list], .pagination-paquet').forEach(e => e.remove());
 		const startIdx = (page - 1) * PAQUETS_PAR_PAGE;
 		const endIdx = startIdx + PAQUETS_PAR_PAGE;
 		const pagePaquets = paquets.slice(startIdx, endIdx);
 
-		const row = document.createElement('div');
-		row.className = 'row g-2';
+		const list = document.createElement('div');
+		list.className = 'd-flex flex-column gap-2 align-items-center';
+		list.setAttribute('data-mini-list', '');
 		pagePaquets.forEach((p) => {
-			const col = document.createElement('div');
-			col.className = 'col-12 col-sm-12 col-md-12';
 			const card = document.createElement('div');
-			card.className = 'card shadow-sm mb-2 paquet-mini-item paquet-mini-item--todo';
+			card.className = 'card shadow-sm paquet-mini-item paquet-mini-item--todo w-100 paquet-mini-card px-3 py-2 text-start';
 			card.setAttribute('role', 'button');
 			card.setAttribute('tabindex', '0');
 			card.textContent = p.cote || '';
-			card.style.textAlign = 'center';
-			card.style.fontSize = '0.95rem';
-			card.style.fontWeight = '400';
 			const open = () => afficherCardPaquetModal(p);
 			card.addEventListener('click', open);
 			card.addEventListener('keydown', (e) => {
@@ -162,10 +157,9 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 					open();
 				}
 			});
-			col.appendChild(card);
-			row.appendChild(col);
+			list.appendChild(card);
 		});
-		conteneur.appendChild(row);
+		conteneur.appendChild(list);
 
 		renderPagination(page);
 	}

@@ -37,6 +37,7 @@ input[type="number"]::-webkit-outer-spin-button {
 	margin: 0;
 }
 input[type="number"] {
+	appearance: textfield;
 	-moz-appearance: textfield;
 }
 #tableau-paquet .form-control[type="number"]::-webkit-inner-spin-button, 
@@ -45,6 +46,7 @@ input[type="number"] {
 	margin: 0;
 }
 #tableau-paquet .form-control[type="number"] {
+	appearance: textfield;
 	-moz-appearance: textfield;
 }
 #corpus-select, .select2-container--default .select2-selection--single {
@@ -158,7 +160,7 @@ input[type="number"] {
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	z-index: 3000;
+	z-index: 2000;
 }
 
 .modal-dialog-center {
@@ -166,11 +168,49 @@ input[type="number"] {
 	width: 100%;
 }
 
+/* Modales création / édition paquet (harmonisées) */
+.paquet-modal-dialog {
+	max-width: 760px;
+	width: calc(100% - 2rem);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.paquet-modal-content {
+	border-radius: var(--bs-border-radius-lg);
+	border: 1px solid var(--bs-border-color);
+}
+
+.paquet-modal-header {
+	border-bottom: 0;
+	padding-bottom: 0.5rem;
+}
+
+.paquet-modal-body {
+	padding-top: 0.25rem;
+}
+
+.paquet-modal-flags {
+	background-color: var(--bs-tertiary-bg);
+	border: 1px solid var(--bs-border-color);
+	border-radius: var(--bs-border-radius);
+	padding: 0.75rem;
+}
+
+.paquet-modal-actions .btn {
+	min-width: 160px;
+}
+
 /* Mini tableaux (sidebar) */
 .paquet-mini-item {
 	cursor: pointer;
 	user-select: none;
 	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* Mini cartes centrées (évite l'effet "plein écran" sur mobile) */
+.paquet-mini-card {
+	max-width: 420px;
 }
 
 .paquet-mini-item--todo {

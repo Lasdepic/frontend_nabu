@@ -5,6 +5,15 @@ import { createStatusSelector } from '../selecteur/selectStatus.js';
 import { editPaquet } from '../../API/paquet/paquet.js';
 
 export function afficherCardPaquetEditModal(paquet) {
+	function escapeHtml(value) {
+		return String(value ?? '')
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
+
 	function normalizeStatusLabel(label) {
 		const raw = String(label || '')
 			.trim()
@@ -49,29 +58,20 @@ export function afficherCardPaquetEditModal(paquet) {
 
 	const overlay = document.createElement('div');
 	overlay.id = 'paquet-modal-overlay';
-	overlay.className = 'modal fade show';
+	overlay.className = 'paquet-modal-overlay modal fade show';
 	overlay.style.display = 'block';
-	overlay.style.background = 'rgba(0,0,0,0.5)';
-	overlay.style.position = 'fixed';
-	overlay.style.top = 0;
-	overlay.style.left = 0;
-	overlay.style.width = '100vw';
-	overlay.style.height = '100vh';
-	overlay.style.zIndex = 2000;
 
 	const modal = document.createElement('div');
-	modal.className = 'modal-dialog modal-dialog-centered';
-	modal.style.maxWidth = '700px';
-	modal.style.width = '100%';
+	modal.className = 'modal-dialog modal-dialog-centered paquet-modal-dialog';
 
 	const modalContent = document.createElement('div');
-	modalContent.className = 'modal-content shadow-lg';
+	modalContent.className = 'modal-content shadow-lg paquet-modal-content';
 
 	const modalHeader = document.createElement('div');
-	modalHeader.className = 'modal-header';
+	modalHeader.className = 'modal-header paquet-modal-header';
 	const title = document.createElement('h5');
 	title.className = 'modal-title fw-bold text-center w-100';
-	title.textContent = 'Modification des informations';
+	title.textContent = 'Modification d’un paquet';
 
 	const closeBtn = document.createElement('button');
 	closeBtn.type = 'button';
@@ -83,27 +83,27 @@ export function afficherCardPaquetEditModal(paquet) {
 	modalHeader.appendChild(closeBtn);
 
 	const form = document.createElement('form');
-	form.className = 'modal-body';
+	form.className = 'modal-body paquet-modal-body';
 	const connectedUserId = localStorage.getItem('userId') || '';
 	form.innerHTML = `
 		<div class="container-fluid">
 			<div class="row g-3">
 				<div class="col-md-6">
 					<label class="form-label">Nom dossier <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="folderName" value="${paquet.folderName || ''}" required>
+					<input type="text" class="form-control" name="folderName" value="${escapeHtml(paquet.folderName)}" required>
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images autre :</label>
-					<input type="text" class="form-control" name="microFilmImage" value="${paquet.microFilmImage || ''}">
+					<input type="text" class="form-control" name="microFilmImage" value="${escapeHtml(paquet.microFilmImage)}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Cote <span class="text-danger">*</span> :</label>
-					<input type="text" class="form-control" name="cote" value="${paquet.cote || ''}" required>
-					<input type="hidden" name="oldCote" value="${paquet.cote || ''}">
+					<input type="text" class="form-control" name="cote" value="${escapeHtml(paquet.cote)}" required>
+					<input type="hidden" name="oldCote" value="${escapeHtml(paquet.cote)}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Répertoire des images couleurs :</label>
-					<input type="text" class="form-control" name="imageColor" value="${paquet.imageColor || ''}">
+					<input type="text" class="form-control" name="imageColor" value="${escapeHtml(paquet.imageColor)}">
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Corpus :</label>
@@ -119,9 +119,9 @@ export function afficherCardPaquetEditModal(paquet) {
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">Recherche Archivage :</label>
-					<input type="text" class="form-control" name="searchArchiving" value="${paquet.searchArchiving || ''}">
+					<input type="text" class="form-control" name="searchArchiving" value="${escapeHtml(paquet.searchArchiving)}">
 				</div>
-				<div class="col-md-12 d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
+				<div class="col-md-12 paquet-modal-flags d-flex align-items-center gap-4 mt-2 mb-2 justify-content-center flex-wrap">
 					<div class="form-check">
 						<input class="form-check-input" type="checkbox" name="toDo" id="editToDo" ${paquet.toDo ? 'checked' : ''}>
 						<label class="form-check-label" for="editToDo">A faire :</label>
@@ -137,10 +137,10 @@ export function afficherCardPaquetEditModal(paquet) {
 				</div>
 				<div class="col-md-12">
 					<label class="form-label">Commentaire :</label>
-					<textarea class="form-control" name="comment" rows="4">${paquet.commentaire || ''}</textarea>
+					<textarea class="form-control" name="comment" rows="4">${escapeHtml(paquet.commentaire)}</textarea>
 				</div>
 			</div>
-			<div class="d-flex justify-content-center mt-4">
+			<div class="d-flex justify-content-center mt-4 paquet-modal-actions">
 				<button type="submit" class="btn btn-primary px-5">Enregistrer</button>
 			</div>
 		</div>
