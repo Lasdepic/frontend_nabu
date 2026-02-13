@@ -7,10 +7,8 @@ export function afficherStatus(message, type = "secondary") {
     zone.classList.remove('d-none');
     zone.removeAttribute('hidden');
     
-    // Animation d'entrée
     zone.style.animation = 'fadeIn 0.3s ease-in';
     
-    // Auto-masquer les messages de succès après 5 secondes
     if (type === 'success') {
       setTimeout(() => {
         zone.style.animation = 'fadeOut 0.3s ease-out';
