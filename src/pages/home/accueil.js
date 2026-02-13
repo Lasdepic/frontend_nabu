@@ -79,11 +79,11 @@ export default function accueilPage() {
     tableauCol.appendChild(tableauCard);
 
     /* ===== SIDEBAR ===== */
-    const sideColWrapper = document.createElement('div');
-    sideColWrapper.className = 'col-12 col-lg-3 order-2';
+   const sideColWrapper = document.createElement('div');
+   sideColWrapper.className = 'col-12 col-lg-3 order-2 sticky-lg';
 
-    const sideCol = document.createElement('div');
-   sideCol.className = 'row g-3 g-lg-4 sticky-lg';
+   const sideCol = document.createElement('div');
+   sideCol.className = 'row g-3 g-lg-4';
 
     /* ToDo */
     const todoCard = document.createElement('div');
