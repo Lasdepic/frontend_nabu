@@ -1,17 +1,21 @@
 html.page-sendding, body.page-sendding {
 	overflow-y: hidden !important;
 }
+
+:root {
+	--nabu-sticky-top: 100px;
+}
 /* Sticky latéral pour la colonne droite, sans modifier la hauteur ni overflow */
 .side-fixed {
 	position: sticky;
-	top: 100px;
+	top: var(--nabu-sticky-top, 100px);
 }
 
 /* Sticky sidebar (desktop uniquement) */
 @media (min-width: 992px) {
 	.sticky-lg {
 		position: sticky;
-		top: 100px;
+		top: var(--nabu-sticky-top, 100px);
 		align-self: flex-start;
 	}
 

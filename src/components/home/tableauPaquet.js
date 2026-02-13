@@ -9,6 +9,7 @@ import { formatStatusLabel, renderStatusBadge } from '../status/badgeStatus.js';
 let dataTablesLoader = null;
 let editPaquetLoader = null;
 let statusFilterHook = null;
+let renderSequence = 0;
 
 function setTableCount(conteneurId, count) {
     const badge = document.querySelector(`[data-count-for="${conteneurId}"]`);
@@ -56,6 +57,22 @@ function ensureJQueryAvailable() {
     }
     if (!window.jQuery && window.$) {
         window.jQuery = window.$;
+    }
+}
+
+function destroyPaquetDataTableIfAny() {
+    const $ = window.jQuery || window.$;
+    if (!$ || !$.fn || !$.fn.DataTable) return;
+
+    const selector = '#tableau-paquet';
+    try {
+        if ($.fn.DataTable.isDataTable(selector)) {
+            const instance = $(selector).DataTable();
+            instance.clear();
+            instance.destroy(true);
+        }
+    } catch (_) {
+        // no-op : on évite de casser le rendu si DataTables est dans un état incohérent.
     }
 }
 
@@ -142,12 +159,16 @@ function getDataTablesFrenchLanguage() {
 }
 
 export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conteneur', filterCorpusId = null) {
+    const currentRender = ++renderSequence;
+
     let conteneur = document.getElementById(conteneurId);
     if (!conteneur) {
         conteneur = document.createElement('div');
         conteneur.id = conteneurId;
         document.body.appendChild(conteneur);
     }
+
+    const isStale = () => currentRender !== renderSequence;
 
     // Badge compteur dans le header (page d'accueil)
     setTableCount(conteneurId, '…');
@@ -173,11 +194,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     removeStatusFilterHookIfAny();
 
-    if (window.$ && window.$.fn && window.$.fn.DataTable) {
-        if ($.fn.DataTable.isDataTable('#tableau-paquet')) {
-            $('#tableau-paquet').DataTable().destroy();
-        }
-    }
+    // Si un rendu précédent avait déjà initialisé DataTables, on le détruit.
+    destroyPaquetDataTableIfAny();
 
     if (!document.getElementById('tableau-paquet-style')) {
         const style = document.createElement('style');
@@ -218,7 +236,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             @media (min-width: 992px) {
                 #tableau-paquet thead th {
                     position: sticky;
-                    top: 0;
+                    top: var(--nabu-sticky-top, 100px);
                     z-index: 5;
                 }
             }
@@ -292,6 +310,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         conteneur.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des données.</div>';
         return;
     }
+
+    if (isStale()) {
+        return;
+    }
     const corpusList = corpusResult?.data || corpusResult;
     const paquets = paquetsResult?.data || paquetsResult;
     const statusList = statusResult?.data || statusResult;
@@ -319,6 +341,14 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         return;
     }
 
+    if (isStale()) {
+        return;
+    }
+
+    // Cas intermittent typique : plusieurs appels concurrents finissent par arriver ici.
+    // On redétruit juste avant l'init pour éviter "Cannot reinitialise DataTable".
+    destroyPaquetDataTableIfAny();
+
     const filteredPaquets = filterCorpusId
         ? paquets.filter(p => String(p.corpusId) === String(filterCorpusId))
         : paquets;
@@ -327,12 +357,15 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     let selectedStatusId = '';
 
+    const $ = window.jQuery || window.$;
     const table = $('#tableau-paquet').DataTable({
         data: filteredPaquets.map(p => ({
             ...p,
             lastmodifDateISO: (p.lastmodifDate || p.date) ? new Date(p.lastmodifDate || p.date).toISOString() : ''
         })),
-        initComplete: () => setLoading(false),
+        initComplete: () => {
+            if (!isStale()) setLoading(false);
+        },
         columns: [
             { data: 'folderName', className: 'folderName', render: v => {
                 const safe = escapeHtml(v || '-');

@@ -16,10 +16,6 @@ export async function afficherTableauToDoPaquet(conteneurId = 'to-do-paquet-cont
 		document.body.appendChild(conteneur);
 	}
 
-	// bloc le tableau pendant le scroll (supprimé sticky, géré par le parent)
-	conteneur.style.display = 'block';
-	conteneur.style.zIndex = '1000';
-
 	// État de chargement (header géré par la page)
 	setMiniTableCount(conteneurId, '…');
 	conteneur.innerHTML = `

@@ -83,7 +83,7 @@ export default function accueilPage() {
     sideColWrapper.className = 'col-12 col-lg-3 order-2';
 
     const sideCol = document.createElement('div');
-   sideCol.className = 'd-flex flex-column gap-3 gap-lg-4 sticky-lg';
+   sideCol.className = 'row g-3 g-lg-4 sticky-lg';
 
     /* ToDo */
     const todoCard = document.createElement('div');
@@ -121,8 +121,16 @@ export default function accueilPage() {
    errorCard.appendChild(errorHeader);
    errorCard.appendChild(errorBody);
 
-    sideCol.appendChild(todoCard);
-    sideCol.appendChild(errorCard);
+   const todoCol = document.createElement('div');
+   todoCol.className = 'col-12 col-md-6 col-lg-12';
+   todoCol.appendChild(todoCard);
+
+   const errorCol = document.createElement('div');
+   errorCol.className = 'col-12 col-md-6 col-lg-12';
+   errorCol.appendChild(errorCard);
+
+   sideCol.appendChild(todoCol);
+   sideCol.appendChild(errorCol);
     sideColWrapper.appendChild(sideCol);
 
     /* ASSEMBLAGE */
