@@ -2,29 +2,30 @@ import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
 let selectedCorpus = null;
 
+let corpusSelectInstanceCounter = 0;
 
-export function selectCorpus(onSelect, defaultValue) {
+
+export function selectCorpus(onSelect, defaultValue, options = {}) {
 	const container = document.createElement('div');
 	const select = document.createElement('select');
-	select.className = 'select-small';
-	select.id = 'corpus-select';
-	select.disabled = true;
+	select.className = 'select-small corpus-select';
+	const instanceId = options?.id || `corpus-select-${++corpusSelectInstanceCounter}`;
+	select.id = instanceId;
 
-	const loadingOption = document.createElement('option');
-	loadingOption.value = '';
-	loadingOption.textContent = 'Chargement…';
-	loadingOption.selected = true;
-	loadingOption.disabled = true;
-	select.appendChild(loadingOption);
-
-	fetchAllCorpus()
-		.then(corpusList => {
-			if (!(corpusList && corpusList.success && Array.isArray(corpusList.data))) {
-				throw new Error('Réponse API inattendue');
+	const hasSelect2 = () => !!(window.$ && window.$.fn && window.$.fn.select2);
+	const tryDestroySelect2 = () => {
+		if (!hasSelect2()) return;
+		try {
+			const $el = window.$(select);
+			if ($el && $el.data && $el.data('select2')) {
+				$el.select2('destroy');
 			}
+		} catch (_) {
+		}
+	};
 
-			select.innerHTML = '';
-
+	fetchAllCorpus().then(corpusList => {
+		if (corpusList && corpusList.success && Array.isArray(corpusList.data)) {
 			const allOption = document.createElement('option');
 			allOption.value = 'ALL';
 			allOption.textContent = 'TOUS';
@@ -33,6 +34,7 @@ export function selectCorpus(onSelect, defaultValue) {
 				nom: 'TOUS',
 				description: 'Afficher tous les paquets'
 			});
+			allOption.selected = true;
 			select.appendChild(allOption);
 
 			const sortedCorpus = corpusList.data.slice().sort((a, b) => {
@@ -55,27 +57,42 @@ export function selectCorpus(onSelect, defaultValue) {
 				select.appendChild(option);
 			});
 
-			select.disabled = false;
+			setTimeout(() => {
+				if (defaultValue) {
+					select.value = defaultValue;
+					if (hasSelect2()) {
+						window.$(select).val(defaultValue).trigger('change');
+					} else {
+						select.dispatchEvent(new Event('change'));
+					}
+				}
+				if (hasSelect2()) {
+					tryDestroySelect2();
+					window.$(select).select2({
+						width: 'resolve',
+						templateResult: formatCorpusOption,
+						templateSelection: formatCorpusSelection,
+						dropdownParent: window.$(container),
+						escapeMarkup: function (markup) { return markup; }
+					});
+					const style = document.createElement('style');
+					style.innerHTML = `
+						#${instanceId} + .select2 .select2-selection__rendered {
+							text-align: center !important;
+							width: 100%;
+							font-weight: bold;
+						}
+						.select2-results__option[role="option"][id^="select2-${instanceId}-result"][id$="-ALL"] {
+							text-align: center !important;
+						}
+					`;
+					container.appendChild(style);
+				}
+			}, 0);
+		}
+	});
 
-			// Sélectionner la valeur par défaut si fournie, sinon ALL
-			const initialValue = defaultValue || 'ALL';
-			select.value = initialValue;
-			select.dispatchEvent(new Event('change'));
-
-			ensureSelect2(select, container);
-		})
-		.catch(() => {
-			select.innerHTML = '';
-			const errorOption = document.createElement('option');
-			errorOption.value = '';
-			errorOption.textContent = 'Impossible de charger les corpus';
-			errorOption.selected = true;
-			errorOption.disabled = true;
-			select.appendChild(errorOption);
-			select.disabled = true;
-		});
-
-	select.addEventListener('change', (e) => {
+	const handleSelectionChange = () => {
 		const selectedOption = select.options[select.selectedIndex];
 		if (selectedOption && selectedOption.value === 'ALL') {
 			selectedCorpus = 'ALL';
@@ -93,54 +110,20 @@ export function selectCorpus(onSelect, defaultValue) {
 				onSelect(null);
 			}
 		}
-	});
+	};
+
+	select.addEventListener('change', handleSelectionChange);
+	setTimeout(() => {
+		if (hasSelect2()) {
+			window.$(select).on('change.selectCorpus', (e) => {
+				if (e && e.originalEvent) return;
+				handleSelectionChange();
+			});
+		}
+	}, 0);
 
 	container.appendChild(select);
 	return container;
-}
-
-function ensureSelect2(select, container) {
-	const maxWaitMs = 2000;
-	const intervalMs = 50;
-	const start = Date.now();
-
-	const tryInit = () => {
-		if (!(window.$ && window.$.fn && window.$.fn.select2)) {
-			if (Date.now() - start < maxWaitMs) {
-				setTimeout(tryInit, intervalMs);
-			}
-			return;
-		}
-
-		const $ = window.$;
-		// Éviter les doubles initialisations si la page est re-rendue.
-		if ($(select).data('select2')) {
-			return;
-		}
-
-		$(select).select2({
-			width: 'resolve',
-			templateResult: formatCorpusOption,
-			templateSelection: formatCorpusSelection,
-			dropdownParent: $(container),
-			escapeMarkup: function (markup) { return markup; }
-		});
-
-		const style = document.createElement('style');
-		style.innerHTML = `
-			#corpus-select + .select2 .select2-selection__rendered {
-				text-align: center !important;
-				width: 100%;
-				font-weight: bold;
-			}
-			.select2-results__option[role="option"][id^="select2-corpus-select-result"][id$="-ALL"] {
-				text-align: center !important;
-			}
-		`;
-		container.appendChild(style);
-	};
-
-	tryInit();
 }
 
 function formatCorpusOption(state) {

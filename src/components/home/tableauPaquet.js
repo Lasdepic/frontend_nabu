@@ -233,13 +233,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                 }
             }
 
-            @media (min-width: 992px) {
-                #tableau-paquet thead th {
-                    position: sticky;
-                    top: var(--nabu-sticky-top, 100px);
-                    z-index: 5;
-                }
-            }
         `;
         document.head.appendChild(style);
     }
