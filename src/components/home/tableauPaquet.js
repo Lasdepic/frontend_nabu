@@ -9,6 +9,7 @@ import { formatStatusLabel, renderStatusBadge } from '../status/badgeStatus.js';
 let dataTablesLoader = null;
 let editPaquetLoader = null;
 let statusFilterHook = null;
+let todoFilterHook = null;
 let renderSequence = 0;
 
 function setTableCount(conteneurId, count) {
@@ -25,16 +26,33 @@ function getStatusLabel(status) {
     return formatStatusLabel(raw, 'Inconnu');
 }
 
-function removeStatusFilterHookIfAny() {
-    if (!statusFilterHook) return;
+function removeDataTableSearchHooksIfAny() {
     if (!window.$ || !window.$.fn || !window.$.fn.dataTable || !window.$.fn.dataTable.ext || !window.$.fn.dataTable.ext.search) {
         statusFilterHook = null;
+        todoFilterHook = null;
         return;
     }
     const searchArr = window.$.fn.dataTable.ext.search;
-    const idx = searchArr.indexOf(statusFilterHook);
-    if (idx !== -1) searchArr.splice(idx, 1);
-    statusFilterHook = null;
+
+    if (statusFilterHook) {
+        const idx = searchArr.indexOf(statusFilterHook);
+        if (idx !== -1) searchArr.splice(idx, 1);
+        statusFilterHook = null;
+    }
+    if (todoFilterHook) {
+        const idx = searchArr.indexOf(todoFilterHook);
+        if (idx !== -1) searchArr.splice(idx, 1);
+        todoFilterHook = null;
+    }
+}
+
+function isToDoTruthy(value) {
+    if (value === true || value === 1) return true;
+    if (typeof value === 'string') {
+        const v = value.trim().toLowerCase();
+        return v === '1' || v === 'true' || v === 'oui' || v === 'yes';
+    }
+    return false;
 }
 
 function escapeHtml(value) {
@@ -192,7 +210,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
     }
 
-    removeStatusFilterHookIfAny();
+    removeDataTableSearchHooksIfAny();
 
     // Si un rendu précédent avait déjà initialisé DataTables, on le détruit.
     destroyPaquetDataTableIfAny();
@@ -204,6 +222,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; }
             #tableau-paquet th, #tableau-paquet td { border: none; border-bottom: 1px solid var(--bs-border-color, #343A40); text-align: center !important; vertical-align: middle !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             #tableau-paquet thead th { border-bottom: 2px solid var(--bs-border-color, #343A40); background-color: var(--bs-dark, #212529); color: #fff; }
+            #tableau-paquet thead th#todo-filter-th { cursor: pointer; user-select: none; }
             #tableau-paquet td.folderName { max-width: 150px; }
             #tableau-paquet td.commentaire { max-width: 250px; }
             #tableau-paquet td { line-height: 1.5em; }
@@ -259,7 +278,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Commentaire</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">SIP</th>
                         <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">Statut</th>
-                        <th style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">À faire</th>
+                        <th id="todo-filter-th" role="button" tabindex="0" aria-pressed="false" title="Cliquer pour filtrer : À faire uniquement" style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">À faire</th>
                         <th class="d-none" style="background: rgb(33, 37, 41); color: rgb(255, 255, 255); width: 113px; text-align: center; vertical-align: middle;">DateTri</th>
                     </tr>
                 </thead>
@@ -349,6 +368,7 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
     setTableCount(conteneurId, filteredPaquets.length);
 
     let selectedStatusId = '';
+    let todoOnly = false;
 
     const $ = window.jQuery || window.$;
     const table = $('#tableau-paquet').DataTable({
@@ -383,6 +403,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             { data: 'lastmodifDateISO', visible: false }
         ],
 
+        columnDefs: [
+            { targets: 6, orderable: false }
+        ],
+
         deferRender: true,
 
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
@@ -401,6 +425,46 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             return String(rowStatusId) === String(selectedStatusId);
         };
         window.$.fn.dataTable.ext.search.push(statusFilterHook);
+
+        // Filtre "À faire" (sur le booléen toDo)
+        todoFilterHook = function(settings, data, dataIndex) {
+            if (!settings || !settings.nTable || settings.nTable.id !== 'tableau-paquet') return true;
+            if (!todoOnly) return true;
+            const rowData = settings.aoData && settings.aoData[dataIndex] ? settings.aoData[dataIndex]._aData : null;
+            return isToDoTruthy(rowData?.toDo);
+        };
+        window.$.fn.dataTable.ext.search.push(todoFilterHook);
+    }
+
+    // Filtre "À faire" via clic sur l'entête de colonne (sans ajouter de contrôle)
+    const todoFilterTh = conteneur.querySelector('#todo-filter-th');
+    const syncTodoHeader = () => {
+        if (!todoFilterTh) return;
+        todoFilterTh.setAttribute('aria-pressed', todoOnly ? 'true' : 'false');
+        todoFilterTh.classList.toggle('text-decoration-underline', todoOnly);
+        todoFilterTh.title = todoOnly
+            ? 'Filtre actif : affiche uniquement les paquets à faire (cliquer pour désactiver)'
+            : 'Cliquer pour filtrer : À faire uniquement';
+    };
+    if (todoFilterTh) {
+        // Capture pour éviter le tri DataTables sur ce header.
+        todoFilterTh.addEventListener('click', (evt) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            evt.stopImmediatePropagation();
+            todoOnly = !todoOnly;
+            syncTodoHeader();
+            table.draw();
+        }, true);
+        todoFilterTh.addEventListener('keydown', (evt) => {
+            if (evt.key === 'Enter' || evt.key === ' ') {
+                evt.preventDefault();
+                todoOnly = !todoOnly;
+                syncTodoHeader();
+                table.draw();
+            }
+        });
+        syncTodoHeader();
     }
 
     // UI filtre statut
@@ -592,6 +656,8 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             if (window.afficherTableauToDoPaquet) {
                 window.afficherTableauToDoPaquet('to-do-paquet-conteneur');
             }
+            // Si le filtre "À faire" est actif, le changement doit refléter immédiatement le tableau.
+            table.draw(false);
         } catch (err) {
             alert('Erreur lors de la modification du toDo');
         }
