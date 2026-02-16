@@ -68,6 +68,18 @@ input[type="number"] {
 	direction: ltr !important;
 }
 
+/* Icône d'édition affichée uniquement au survol des options (Select2) */
+.select2-results__option .corpus-edit-icon {
+	opacity: 0;
+	transition: opacity 120ms ease-in-out;
+	pointer-events: auto;
+	cursor: pointer;
+}
+
+.select2-results__option:hover .corpus-edit-icon {
+	opacity: 1;
+}
+
 .dataTables_paginate {
     margin-top: 10px !important;
 }
