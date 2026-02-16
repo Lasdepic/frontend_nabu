@@ -1,8 +1,73 @@
 import { fetchAllCorpus } from '../../API/paquet/corpus.js';
+import { showEditCorpusModal } from './editCorpusModal.js';
 
 let selectedCorpus = null;
 
 let corpusSelectInstanceCounter = 0;
+
+let corpusEditCaptureHandlerInstalled = false;
+
+function installCorpusEditCaptureHandler() {
+	if (corpusEditCaptureHandlerInstalled) return;
+	corpusEditCaptureHandlerInstalled = true;
+
+	document.addEventListener('mousedown', (e) => {
+		const target = e.target;
+		if (!(target instanceof Element)) return;
+
+		const iconEl = target.closest('.corpus-edit-icon');
+		if (!iconEl) return;
+
+		const optionRoot = iconEl.closest('.corpus-option');
+		const id = optionRoot?.getAttribute?.('data-corpus-id');
+		if (!id || id === 'ALL') return;
+
+		// Empêche Select2 de traiter ce clic comme une sélection d'option
+		e.preventDefault();
+		e.stopPropagation();
+
+		const nom = optionRoot?.getAttribute?.('data-corpus-nom') || '';
+		const description = optionRoot?.getAttribute?.('data-corpus-description') || '';
+
+		// Retrouve le <select> lié via l'id du <ul> results (select2-<selectId>-results)
+		let selectEl = null;
+		const resultsList = iconEl.closest('.select2-results__options');
+		const resultsId = resultsList?.getAttribute?.('id') || '';
+		const prefix = 'select2-';
+		const suffix = '-results';
+		if (resultsId.startsWith(prefix) && resultsId.endsWith(suffix)) {
+			const selectId = resultsId.slice(prefix.length, resultsId.length - suffix.length);
+			selectEl = document.getElementById(selectId);
+		}
+
+		if (selectEl) {
+			try {
+				window.$(selectEl).select2('close');
+			} catch (_) {
+			}
+		}
+
+		showEditCorpusModal(
+			{ id: String(id), nom, description },
+			(updated) => {
+				if (!selectEl) return;
+				const opt = Array.from(selectEl.options).find(o => String(o.value) === String(id));
+				if (opt) {
+					opt.textContent = updated?.nameCorpus ?? opt.textContent;
+					opt.dataset.corpus = JSON.stringify({
+						id: String(id),
+						nom: updated?.nameCorpus ?? nom,
+						description: updated?.descriptionCorpus ?? description
+					});
+				}
+				try {
+					window.$(selectEl).trigger('change');
+				} catch (_) {
+				}
+			}
+		);
+	}, true);
+}
 
 
 export function selectCorpus(onSelect, defaultValue, options = {}) {
@@ -75,6 +140,8 @@ export function selectCorpus(onSelect, defaultValue, options = {}) {
 						dropdownParent: window.$(container),
 						escapeMarkup: function (markup) { return markup; }
 					});
+					installCorpusEditCaptureHandler();
+
 					const style = document.createElement('style');
 					style.innerHTML = `
 						#${instanceId} + .select2 .select2-selection__rendered {
@@ -131,15 +198,35 @@ function formatCorpusOption(state) {
 	const option = state.element;
 	if (option && option.dataset && option.dataset.corpus) {
 		const corpus = JSON.parse(option.dataset.corpus);
-		let html = `<div style='text-align: center;'>`;
+		const showPencil = corpus && corpus.id && corpus.id !== 'ALL';
+		const pencilSvg = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+				<path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+				<path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+			</svg>
+		`;
+
+		let html = `<div class='corpus-option position-relative text-center' data-corpus-id='${escapeAttr(corpus.id)}' data-corpus-nom='${escapeAttr(corpus.nom ?? '')}' data-corpus-description='${escapeAttr(corpus.description ?? '')}'>`;
 		html += `<div class='corpus-nom'><b>${corpus.nom}</b></div>`;
 		if (corpus.description) {
 			html += `<div class='corpus-desc' style='color: #6C757D;'>${corpus.description}</div>`;
+		}
+		if (showPencil) {
+			html += `<span class='corpus-edit-icon position-absolute top-50 end-0 translate-middle-y me-2 text-white' role='button' aria-label='Modifier le corpus'>${pencilSvg}</span>`;
 		}
 		html += `</div>`;
 		return window.$('<span>').html(html);
 	}
 	return state.text;
+}
+
+function escapeAttr(value) {
+	return String(value)
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;');
 }
 
 function formatCorpusSelection(state) {
