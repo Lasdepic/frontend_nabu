@@ -2,7 +2,7 @@ import { fetchOnePaquet, deletePaquet } from '../../API/paquet/paquet.js';
 import { fetchAllStatus } from '../../API/paquet/status.js';
 import { fetchAllCorpus } from '../../API/paquet/corpus.js';
 
-import { normalizeStatus, renderStatusBadge } from '../status/badgeStatus.js';
+import { normalizeStatus, renderStatusBadge, initBootstrapTooltips } from '../status/badgeStatus.js';
 
 let STATUS_CACHE = null;
 let CORPUS_CACHE = null;
@@ -115,6 +115,7 @@ export async function afficherCardPaquetModal(paquet) {
 	dialog.appendChild(content);
 	overlay.appendChild(dialog);
 	document.body.appendChild(overlay);
+	initBootstrapTooltips(overlay);
 	overlay.addEventListener('click', e => {
 		if (e.target === overlay) overlay.remove();
 	});
@@ -297,7 +298,9 @@ export async function afficherCardPaquet(paquet, containerSelector = 'main') {
 	const container = document.querySelector(containerSelector);
 	if (!container) return;
 	container.innerHTML = '';
-	container.appendChild(await createCardPaquet(paquet));
+	const card = await createCardPaquet(paquet);
+	container.appendChild(card);
+	initBootstrapTooltips(card);
 }
 
 export async function afficherCardPaquetDepuisAPI(id, containerSelector = 'main') {
