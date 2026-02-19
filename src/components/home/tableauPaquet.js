@@ -4,7 +4,7 @@ import { fetchAllStatus } from '../../API/paquet/status.js';
 import { afficherCardPaquetModal } from './cardPaquet.js';
 import { afficherCardPaquetAddModal } from '../editPaquet/addPaquet.js';
 import { createDateFilter } from './filterDate.js';
-import { formatStatusLabel, renderStatusBadge } from '../status/badgeStatus.js';
+import { formatStatusLabel, renderStatusBadge, initBootstrapTooltips } from '../status/badgeStatus.js';
 
 let dataTablesLoader = null;
 let editPaquetLoader = null;
@@ -377,7 +377,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             lastmodifDateISO: (p.lastmodifDate || p.date) ? new Date(p.lastmodifDate || p.date).toISOString() : ''
         })),
         initComplete: () => {
-            if (!isStale()) setLoading(false);
+            if (!isStale()) {
+                setLoading(false);
+                initBootstrapTooltips(conteneur);
+            }
         },
         columns: [
             { data: 'folderName', className: 'folderName', render: v => {
@@ -529,6 +532,9 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
         // Maintient le badge du header synchro avec les filtres/recherches DataTables.
         setTableCount(conteneurId, nbTotal);
+
+		// DataTables reconstruit le DOM : on réactive les tooltips à chaque redraw.
+		initBootstrapTooltips(conteneur);
     });
 
     let filterMoved = false;

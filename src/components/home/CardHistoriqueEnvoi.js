@@ -2,11 +2,22 @@
 
 import { fetchAllHistoriqueEnvoi } from '../../API/paquet/historiqueEnvoi.js';
 import { callVitamAPI } from '../../API/vitam/vitamAPI.js';
+import { initBootstrapTooltips } from '../status/badgeStatus.js';
+
+function escapeHtml(value) {
+    const str = value === null || value === undefined ? '' : String(value);
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 function createStatusIconHtml({ iconClass, colorClass, label }) {
-    const safeLabel = String(label ?? '');
+    const safeLabel = escapeHtml(label ?? '');
     return `\
-<span class="d-inline-flex align-items-center" title="${safeLabel}" aria-label="${safeLabel}" role="img">\
+<span class="d-inline-flex align-items-center" data-bs-toggle="tooltip" data-bs-placement="top" title="${safeLabel}" aria-label="${safeLabel}" role="img">\
   <i class="bi ${iconClass} ${colorClass} fs-5"></i>\
 </span>`;
 }
@@ -63,6 +74,7 @@ async function updateCinesValidationIcons(rootEl) {
         el.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>';
         const validated = await isItemValidatedByCines(itemId);
         el.innerHTML = validated ? CINES_VALID_ICON_HTML : CINES_INVALID_ICON_HTML;
+        initBootstrapTooltips(el);
     }));
 }
 
@@ -143,6 +155,9 @@ export async function afficherCardHistoriqueEnvoi(paquetCote) {
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
+    // Active les tooltips sur le contenu initial (ex: icônes déjà présentes)
+    initBootstrapTooltips(content);
+
     const result = await fetchAllHistoriqueEnvoi(paquetCote);
     const historiques = result?.data ?? result;
     const list = Array.isArray(historiques) ? historiques : [];
@@ -209,6 +224,9 @@ export async function afficherCardHistoriqueEnvoi(paquetCote) {
     body.appendChild(tableWrapper);
 
     await updateCinesValidationIcons(content);
+
+    // Les icônes de validation sont injectées après un appel async.
+    initBootstrapTooltips(content);
 }
 
 window.afficherCardHistoriqueEnvoi = afficherCardHistoriqueEnvoi;
