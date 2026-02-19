@@ -34,14 +34,14 @@ const STATUS_BG_BY_NAME = {
 };
 
 const STATUS_HELP_BY_NAME = {
-	INEXISTANT: "ZIP non créé",
-	NON_ENVOYE: "ZIP créé mais pas d'envoi au cines.",
-	ENVOI_EN_COURS: "Envoi en cours.",
-	ENVOI_OK: "Envoi au cines terminé.",
-	ENVOI_EN_ERREUR: "Envoi en erreur (à vérifier / relancer) par le cines.",
-	ENVOI_EN_PAUSE: "Envoi mis en pause par le cines.",
-	ENVOI_SCDI_OK: "Envoi sur le serveur ok.",
-	ENVOI_SCDI_ATTENTE: "Envoi en différé, en attente d'être envoyé au cines."
+	INEXISTANT: "Aucun ZIP n'a été généré.",
+	NON_ENVOYE: "ZIP généré, mais aucun envoi n'a été lancé vers le CINES.",
+	ENVOI_EN_COURS: "Envoi vers le CINES en cours.",
+	ENVOI_OK: "Envoi vers le CINES terminé avec succès.",
+	ENVOI_EN_ERREUR: "Échec de l'envoi vers le CINES : à vérifier puis relancer si nécessaire.",
+	ENVOI_EN_PAUSE: "Envoi mis en pause côté CINES.",
+	ENVOI_SCDI_OK: "Transfert vers le serveur SCDI terminé avec succès.",
+	ENVOI_SCDI_ATTENTE: "Envoi différé : en attente de prise en charge pour l'envoi vers le CINES."
 };
 
 export function normalizeStatus(status) {
