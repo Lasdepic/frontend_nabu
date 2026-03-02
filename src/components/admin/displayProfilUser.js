@@ -24,6 +24,7 @@ export function afficherProfilUtilisateur(user) {
 	import('../../API/users/currentUser.js').then(async ({ getCurrentUser }) => {
 		   const currentUser = await getCurrentUser();
 		   const isAdmin = currentUser && currentUser.roleId === 1;
+		   const isSystemUser = user.email === 'utilisateur.supprime@nabu.local';
 
 		   const modal = document.createElement('div');
 		   modal.className = 'modal fade';
@@ -66,8 +67,8 @@ export function afficherProfilUtilisateur(user) {
 				   </div>
 
 				   <div class="modal-footer justify-content-center">
-					   <button id="btn-modifier-mdp" class="btn btn-warning">Modifier mot de passe</button>
-					   ${isAdmin ? '<button id="btn-supprimer-user" class="btn btn-danger">Supprimer</button>' : ''}
+					   ${!isSystemUser ? '<button id="btn-modifier-mdp" class="btn btn-warning">Modifier mot de passe</button>' : ''}
+					   ${isAdmin && !isSystemUser ? '<button id="btn-supprimer-user" class="btn btn-danger">Supprimer</button>' : ''}
 				   </div>
 				   <div id="card-modifier-mdp" class="d-none position-absolute top-50 start-50 translate-middle" style="z-index:1056; min-width:320px; max-width:90vw;">
 					   <div class="card shadow border-0">
@@ -108,7 +109,7 @@ export function afficherProfilUtilisateur(user) {
 
 		   // Fonctionnalité : Modifier mot de passe avec card
 		   // Fonctionnalité : Suppression utilisateur (seulement si admin)
-		   if (isAdmin) {
+		   if (isAdmin && !isSystemUser) {
 			   const btnSupprimerUser = modal.querySelector('#btn-supprimer-user');
 			   if (btnSupprimerUser) {
 				   btnSupprimerUser.addEventListener('click', () => {
@@ -149,7 +150,7 @@ export function afficherProfilUtilisateur(user) {
 					   };
 					   // Confirmer
 					   card.querySelector('#btn-confirm-delete-user').onclick = async () => {
-						   const { deleteUser } = await import('../../API/users.js');
+						   const { deleteUser } = await import('../../API/users/users.js');
 						   const result = await deleteUser(user.id);
 						   card.remove();
 						   if (result && result.success) {
@@ -199,7 +200,7 @@ export function afficherProfilUtilisateur(user) {
 					   e.preventDefault();
 					   const newPassword = inputNouveauMdp.value;
 					   if (newPassword && newPassword.trim().length > 0) {
-						   const { updateUserPassword } = await import('../../API/users.js');
+						   const { updateUserPassword } = await import('../../API/users/users.js');
 						   const result = await updateUserPassword(user.id, newPassword);
 						   if (result && result.success) {
 							   cardModifierMdp.classList.add('d-none');
