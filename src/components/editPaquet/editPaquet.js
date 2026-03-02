@@ -6,7 +6,7 @@ import { openPaquetModal, applySipRule, refreshPaquetTables } from './paquetModa
 
 export function afficherCardPaquetEditModal(paquet) {
 	openPaquetModal({
-		titleText: 'Modification d’un paquet',
+		titleText: 'Modification',
 		values: {
 			folderName: paquet?.folderName ?? '',
 			microFilmImage: paquet?.microFilmImage ?? '',

@@ -141,9 +141,9 @@ function creerModalDom() {
 				<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
 					<div class="text-muted small">
 						<div>
-							<span class="fw-semibold">Obligatoire :</span> <span class="fw-semibold">cote</span>
-							<span class="text-muted">•</span>
-							<span class="fw-semibold">Optionnelles :</span> dossier, commentaire, corpus (ID)
+							<span class="fw-semibold">Obligatoire :</span> <span class="fw-semibold">cote et dossier</span>
+							<span class="text-muted"> • </span>
+							<span class="fw-semibold">Optionnelles : </span>commentaire, corpus (ID)
 						</div>
 						<div>
 							<span class="fw-semibold">Délimiteur :</span> ; ou , (auto-détecté)
@@ -156,7 +156,7 @@ function creerModalDom() {
 
 				<div class="alert alert-light border small mb-0" role="status" aria-live="polite">
 					<div class="fw-semibold">Aide : IDs des corpus</div>
-					<div class="text-muted">Champ API <span class="fw-semibold">idcorpus</span> → colonne <span class="fw-semibold">corpus</span></div>
+					<div class="text-muted"><span class="fw-semibold">idcorpus</span> → colonne <span class="fw-semibold">corpus</span></div>
 					<div id="csv-corpus-hint" class="text-muted mt-2">
 						<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
 						<span>Chargement de la liste des corpus…</span>
