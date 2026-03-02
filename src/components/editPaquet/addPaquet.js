@@ -14,48 +14,29 @@ export function afficherCardPaquetAddModal(defaults = {}) {
 		},
 		afterMount: async ({ form }) => {
 			const corpusContainer = form.querySelector('#corpus-select-container');
-		if (corpusContainer) {
-			const corpusSelector = selectCorpus();
-			corpusContainer.appendChild(corpusSelector);
-
-			// Ajout du bouton "Créer un corpus"
-			const createCorpusBtn = document.createElement('button');
-			createCorpusBtn.type = 'button';
-			createCorpusBtn.className = 'btn btn-outline-primary btn-sm ms-2';
-			createCorpusBtn.textContent = 'Créer un corpus';
-			createCorpusBtn.style.marginTop = '8px';
-			corpusContainer.appendChild(createCorpusBtn);
-
-			createCorpusBtn.onclick = async () => {
-				const { showCreateCorpusModal } = await import('../selecteur/createCorpusModal.js');
-				showCreateCorpusModal(async () => {
-					// Après création, rafraîchir le selecteur de corpus
-					corpusContainer.innerHTML = '';
-					const newSelector = selectCorpus();
-					corpusContainer.appendChild(newSelector);
-					corpusContainer.appendChild(createCorpusBtn);
-				});
-			};
-		}
-		const typeDocContainer = form.querySelector('#type-document-select-container');
-		if (typeDocContainer) {
-			const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId' });
-			typeDocContainer.appendChild(typeDocSelectorWrapper);
-		}
-		const statusContainer = form.querySelector('#status-select-container');
-		if (statusContainer) {
-			const statusSelectorWrapper = await createStatusSelector({
-				name: 'statusId',
-				allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
-			});
-			statusContainer.appendChild(statusSelectorWrapper);
-
-			const sipCheckbox = form.querySelector('[name="filedSip"]');
-			if (sipCheckbox) {
-				sipCheckbox.addEventListener('change', () => applySipRule(form));
+			if (corpusContainer) {
+				const corpusSelector = selectCorpus();
+				corpusContainer.appendChild(corpusSelector);
 			}
-			applySipRule(form);
-		}
+			const typeDocContainer = form.querySelector('#type-document-select-container');
+			if (typeDocContainer) {
+				const typeDocSelectorWrapper = await createTypeDocumentSelector({ name: 'typeDocumentId' });
+				typeDocContainer.appendChild(typeDocSelectorWrapper);
+			}
+			const statusContainer = form.querySelector('#status-select-container');
+			if (statusContainer) {
+				const statusSelectorWrapper = await createStatusSelector({
+					name: 'statusId',
+					allowedLabels: ['INEXISTANT', 'NON_ENVOYE'],
+				});
+				statusContainer.appendChild(statusSelectorWrapper);
+
+				const sipCheckbox = form.querySelector('[name="filedSip"]');
+				if (sipCheckbox) {
+					sipCheckbox.addEventListener('change', () => applySipRule(form));
+				}
+				applySipRule(form);
+			}
 		},
 		onSubmit: async (data, { destroy, showPopup }) => {
 			const res = await createPaquet(data);

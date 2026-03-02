@@ -213,7 +213,6 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
 
     removeDataTableSearchHooksIfAny();
 
-    // Si un rendu précédent avait déjà initialisé DataTables, on le détruit.
     destroyPaquetDataTableIfAny();
 
     if (!document.getElementById('tableau-paquet-style')) {
@@ -235,6 +234,10 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
             #tableau-paquet-search-row .dataTables_filter { width: 100%; }
             #tableau-paquet-search-row .dataTables_filter label { width: 100%; display: flex; justify-content: center; align-items: center; gap: .5rem; margin: 0; }
             #tableau-paquet-search-row .dataTables_filter input { max-width: 380px; }
+
+            /* Search + actions bar */
+            #tableau-paquet-filter-col .dataTables_filter { margin: 0; }
+            #tableau-paquet-filter-col .dataTables_filter label { justify-content: center; }
 
             #tableau-paquet-controls-row .dataTables_length { margin: 0; }
             #tableau-paquet-controls-row .dataTables_length label { display: flex; align-items: center; gap: .5rem; margin: 0; }
@@ -551,31 +554,78 @@ export async function afficherTableauPaquet(conteneurId = 'tableau-paquet-conten
         }
         if (filterCol && dataTablesFilter && !filterMoved) {
             filterCol.innerHTML = '';
-            filterCol.appendChild(dataTablesFilter);
-            dataTablesFilter.style.width = '100%';
-            dataTablesFilter.style.maxWidth = '520px';
-            dataTablesFilter.style.display = 'flex';
-            dataTablesFilter.style.justifyContent = 'center';
-            dataTablesFilter.style.margin = '0 auto';
+
+            // Modernise le champ de recherche en input-group Bootstrap (tout en gardant l'input DataTables).
+            try {
+                const label = dataTablesFilter.querySelector('label');
+                const input = label?.querySelector('input');
+                if (label && input) {
+                    // Nettoie le label sans casser les listeners DataTables (on réinsère l'input).
+                    label.textContent = '';
+                    label.classList.add('w-100', 'justify-content-center');
+
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group input-group-sm';
+                    inputGroup.style.maxWidth = '520px';
+
+                    const prefix = document.createElement('span');
+                    prefix.className = 'input-group-text';
+                    prefix.textContent = 'Rechercher';
+
+                    input.classList.add('form-control');
+                    input.placeholder = 'Rechercher…';
+                    input.setAttribute('aria-label', 'Rechercher dans les paquets');
+
+                    inputGroup.appendChild(prefix);
+                    inputGroup.appendChild(input);
+                    label.appendChild(inputGroup);
+                }
+            } catch (_) {
+                // no-op
+            }
+
+            dataTablesFilter.classList.add('w-100');
+
+            // Barre responsive : recherche à gauche/centre, actions à droite (empilées sur mobile).
+            const bar = document.createElement('div');
+            bar.className = 'd-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 w-100';
+
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'flex-grow-1 d-flex justify-content-center justify-content-md-start';
+            searchWrap.appendChild(dataTablesFilter);
+
+            const actionsWrap = document.createElement('div');
+            actionsWrap.className = 'd-flex gap-2 justify-content-center justify-content-md-end flex-shrink-0';
+
             if (!document.getElementById('btn-importer-paquets')) {
                 const btnImport = document.createElement('button');
                 btnImport.id = 'btn-importer-paquets';
-                btnImport.className = 'btn btn-outline-primary ms-2';
+                btnImport.type = 'button';
+                btnImport.className = 'btn btn-outline-primary btn-sm';
                 btnImport.innerHTML = '<i class="bi bi-upload"></i> Importer';
                 btnImport.addEventListener('click', (e) => {
                     e.preventDefault();
                     ouvrirModalImportPaquetsCsv();
                 });
-                filterCol.appendChild(btnImport);
+                actionsWrap.appendChild(btnImport);
             }
+
             if (!document.getElementById('btn-ajouter-paquet')) {
                 const btn = document.createElement('button');
                 btn.id = 'btn-ajouter-paquet';
-                btn.className = 'btn btn-primary ms-2';
+                btn.type = 'button';
+                btn.className = 'btn btn-primary btn-sm';
                 btn.innerHTML = '<i class="bi bi-plus"></i> Ajouter';
-                btn.addEventListener('click', (e) => { e.preventDefault(); afficherCardPaquetAddModal(); });
-                filterCol.appendChild(btn);
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    afficherCardPaquetAddModal();
+                });
+                actionsWrap.appendChild(btn);
             }
+
+            bar.appendChild(searchWrap);
+            bar.appendChild(actionsWrap);
+            filterCol.appendChild(bar);
             filterMoved = true;
         }
         if (dataTablesPaginate) {
